@@ -15,8 +15,17 @@ namespace Tarneeb.Core.State
         private readonly Random _rng;
         private readonly List<Card> _legalScratch = new List<Card>(13);
 
+        private bool _replica;
+        private int _replicaLocalSeat = -1;
+
         public RulesConfig Config { get; }
         public GameState State { get; } = new GameState();
+
+        /// <summary>
+        /// True for a client-side mirror of an authoritative game: only the local seat's hand is known. Commands are
+        /// the master's already-validated ones, and hidden cards are learned as they are played.
+        /// </summary>
+        public bool IsReplica => _replica;
 
         public event Action<GameEvent> EventEmitted;
 
@@ -28,10 +37,10 @@ namespace Tarneeb.Core.State
 
         // ---------------------------------------------------------------- game flow
 
-        /// <summary>Starts a new game with a random first dealer and deals round one.</summary>
-        public void StartGame()
+        /// <summary>Starts a new game (random first dealer unless one is given) and deals round one.</summary>
+        public void StartGame(int? firstDealer = null)
         {
-            State.Dealer = _rng.Next(4);
+            State.Dealer = firstDealer ?? _rng.Next(4);
             State.RoundNumber = 0;
             State.TeamScores[0] = 0;
             State.TeamScores[1] = 0;
@@ -39,6 +48,20 @@ namespace Tarneeb.Core.State
             State.LastRound = null;
             BeginRound();
         }
+
+        /// <summary>
+        /// Starts a replica game: same flow as StartGame but nothing is shuffled; the local seat's hand must be
+        /// supplied through ReplicaHandProvider.
+        /// </summary>
+        public void StartReplicaGame(int dealer, int localSeat)
+        {
+            _replica = true;
+            _replicaLocalSeat = localSeat;
+            StartGame(dealer);
+        }
+
+        /// <summary>Replica only: supplies the local seat's hand each time a round is dealt (in stream order).</summary>
+        public Func<IReadOnlyList<Card>> ReplicaHandProvider;
 
         /// <summary>Starts the next round after RoundOver; the dealer rotates in play direction.</summary>
         public CommandResult StartNextRound()
@@ -76,6 +99,18 @@ namespace Tarneeb.Core.State
 
         private void DealCards()
         {
+            if (_replica)
+            {
+                for (int s = 0; s < 4; s++) State.Hands[s].Clear();
+                IReadOnlyList<Card> mine = ReplicaHandProvider?.Invoke();
+                if (mine != null)
+                {
+                    for (int i = 0; i < mine.Count; i++) State.Hands[_replicaLocalSeat].Add(mine[i]);
+                    State.Hands[_replicaLocalSeat].SortForDisplay();
+                }
+                return;
+            }
+
             var deck = Deck.Create();
             Deck.Shuffle(deck, _rng);
             for (int s = 0; s < 4; s++)
@@ -226,10 +261,12 @@ namespace Tarneeb.Core.State
             var check = CheckTurn(seat, GamePhase.Playing);
             if (!check.Success) return check;
             var hand = State.Hands[seat];
+            bool hidden = _replica && seat != _replicaLocalSeat;
+            if (hidden && !hand.Contains(card)) hand.Add(card);   // learn the card as it is played
             if (!hand.Contains(card)) return CommandResult.Fail(CommandError.CardNotInHand);
 
             Suit? led = State.CurrentTrick.LedSuit;
-            if (led.HasValue && card.Suit != led.Value && hand.HasSuit(led.Value))
+            if (!hidden && led.HasValue && card.Suit != led.Value && hand.HasSuit(led.Value))
                 return CommandResult.Fail(CommandError.MustFollowSuit);
 
             hand.Remove(card);

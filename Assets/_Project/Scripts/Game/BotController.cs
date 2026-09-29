@@ -1,10 +1,7 @@
-using System;
-using System.Collections;
 using Tarneeb.Core.Bots;
 using Tarneeb.Core.Events;
 using Tarneeb.Core.State;
 using Tarneeb.Presentation;
-using UnityEngine;
 
 namespace Tarneeb.Game
 {
@@ -13,6 +10,8 @@ namespace Tarneeb.Game
         private readonly HeuristicBot _bot;
         private readonly System.Random _rng;
         private readonly bool _think;
+        private PlayerCommand _decision;
+        private double _readyAt;
 
         public BotController(int seat, BotConfig config, int seed, bool thinkDelay = true) : base(seat)
         {
@@ -23,11 +22,18 @@ namespace Tarneeb.Game
 
         public override void Observe(GameEvent e) => _bot.Observe(e);
 
-        public override IEnumerator Act(TarneebEngine engine, TableView table, Action<PlayerCommand> submit)
+        public override void Begin(TarneebEngine engine, TableView table)
         {
-            // Think delay lives here (Unity layer) on purpose; the engine and bot are instantaneous.
-            if (_think) yield return Tween.Wait(0.4f + (float)_rng.NextDouble() * 0.5f);
-            submit(Decide(_bot, engine, Seat));
+            _decision = Decide(_bot, engine, Seat);
+            // The think delay lives here (Unity layer) on purpose; the engine and the bot are instantaneous.
+            float delay = _think ? (0.4f + (float)_rng.NextDouble() * 0.5f) / Tween.SpeedMultiplier : 0f;
+            _readyAt = Clock.Seconds + delay;
+        }
+
+        public override bool Poll(out PlayerCommand command)
+        {
+            command = _decision;
+            return Clock.Seconds >= _readyAt;
         }
 
         public static PlayerCommand Decide(IBot bot, TarneebEngine engine, int seat)

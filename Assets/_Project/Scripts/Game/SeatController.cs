@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using Tarneeb.Core.Cards;
 using Tarneeb.Core.Events;
 using Tarneeb.Core.State;
@@ -22,7 +20,11 @@ namespace Tarneeb.Game
         public static PlayerCommand MakePlay(Card c) => new PlayerCommand { Kind = CommandKind.Play, Card = c };
     }
 
-    /// <summary>Decides what a seat does when it is that seat's turn. Human, bot and remote seats share this contract.</summary>
+    /// <summary>
+    /// Decides what a seat does on its turn. The match loop calls Begin once when the turn starts, then polls every
+    /// frame until Poll returns true. Human, bot and remote seats share this contract, which is what keeps bot-fill and
+    /// multiplayer cheap.
+    /// </summary>
     public abstract class SeatController
     {
         public int Seat { get; }
@@ -32,7 +34,13 @@ namespace Tarneeb.Game
         /// <summary>Called immediately for every engine event (not delayed by animations).</summary>
         public virtual void Observe(GameEvent e) { }
 
-        /// <summary>Coroutine that ends after calling submit exactly once.</summary>
-        public abstract IEnumerator Act(TarneebEngine engine, TableView table, Action<PlayerCommand> submit);
+        /// <summary>This seat's turn has started; the engine state is current.</summary>
+        public abstract void Begin(TarneebEngine engine, TableView table);
+
+        /// <summary>Returns true, once, when the seat has decided. The controller hides its own input widgets.</summary>
+        public abstract bool Poll(out PlayerCommand command);
+
+        /// <summary>The turn was taken away (e.g. the master resolved it); hide any input widgets.</summary>
+        public virtual void Cancel() { }
     }
 }

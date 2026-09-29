@@ -3,6 +3,8 @@
     "rootNamespace": "Tarneeb.Tests",
     "references": [
         "Tarneeb.Core",
+        "Tarneeb.Unity",
+        "Tarneeb.Net",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

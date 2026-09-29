@@ -310,6 +310,8 @@ namespace Tarneeb.Presentation
         public void ShowTrumpPicker(Action<Suit> onPick) => _trumpPicker.Show(onPick);
         public void BeginPlayInput(ICollection<Card> legal, Action<Card> onPlay) => _hand.BeginInput(legal, onPlay);
 
+        public void Notify(string message) => _hud.Toast(message, 1.6f);
+
         public void CancelInput()
         {
             _bidPanel.Hide();

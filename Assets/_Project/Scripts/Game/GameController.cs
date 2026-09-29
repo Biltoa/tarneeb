@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Tarneeb.Config;
 using Tarneeb.Core.Bots;
-using Tarneeb.Core.Events;
 using Tarneeb.Core.Rules;
 using Tarneeb.Core.State;
 using Tarneeb.Presentation;
@@ -12,10 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace Tarneeb.Game
 {
-    /// <summary>
-    /// Runs a game: owns the engine and seat controllers, queues engine events for the table to present in order,
-    /// and only asks a seat to act once all pending animations have finished.
-    /// </summary>
+    /// <summary>Scene entry point: builds a match (single player by default), runs it, and handles Play Again / Menu.</summary>
     public sealed class GameController : MonoBehaviour
     {
         public const string MenuSceneName = "Menu";
@@ -25,17 +20,15 @@ namespace Tarneeb.Game
         public static bool LocalIsBot;
         /// <summary>Test hook: skip all animations and popups (headless full-speed game).</summary>
         public static bool SkipPresentation;
+        /// <summary>Set by the Net layer when online play is enabled; null means single player.</summary>
+        public static Func<MatchSetup> OnlineMatchFactory;
         /// <summary>Raised once per finished game with (winningTeam, seed).</summary>
         public static event Action<int, int> GameFinished;
 
         [SerializeField] private TableView table;
         [SerializeField] private int localSeat = 0;
 
-        private TarneebEngine _engine;
-        private SeatController[] _controllers;
-        private readonly Queue<GameEvent> _queue = new Queue<GameEvent>();
-
-        public TarneebEngine Engine => _engine;
+        public MatchLoop CurrentLoop { get; private set; }
 
         private IEnumerator Start()
         {
@@ -48,7 +41,8 @@ namespace Tarneeb.Game
             {
                 GameOverView.Choice choice = GameOverView.Choice.None;
                 yield return PlayOneGame(c => choice = c);
-                if (choice == GameOverView.Choice.Menu && Application.CanStreamedLevelBeLoaded(MenuSceneName))
+                bool online = GameSettings.OnlineEnabled && OnlineMatchFactory != null;
+                if ((choice == GameOverView.Choice.Menu || online) && Application.CanStreamedLevelBeLoaded(MenuSceneName))
                 {
                     SceneManager.LoadScene(MenuSceneName);
                     yield break;
@@ -60,86 +54,35 @@ namespace Tarneeb.Game
         private IEnumerator PlayOneGame(Action<GameOverView.Choice> onChoice)
         {
             int seed = GameSettings.FixedSeed >= 0 ? GameSettings.FixedSeed : Environment.TickCount;
-            var rules = new RulesConfig();
-            _engine = new TarneebEngine(rules, seed);
-            BuildControllers(seed);
-            table.BeginGame(_engine, new SeatMapper(localSeat, rules.Counterclockwise), SeatNames);
-
-            _queue.Clear();
-            _engine.EventEmitted += OnEngineEvent;
-            _engine.StartGame();
-
-            while (true)
-            {
-                yield return DrainQueue();
-                GamePhase phase = _engine.State.Phase;
-
-                if (phase == GamePhase.RoundOver || phase == GamePhase.GameOver)
-                {
-                    bool over = phase == GamePhase.GameOver;
-                    if (!SkipPresentation) yield return table.ShowRoundSummary(_engine.State.LastRound, over, LocalIsBot ? 2.5f : 0f);
-                    if (over) break;
-                    _engine.StartNextRound();
-                    continue;
-                }
-
-                SeatController controller = _controllers[_engine.State.CurrentSeat];
-                PlayerCommand command = default;
-                bool submitted = false;
-                yield return controller.Act(_engine, table, c => { command = c; submitted = true; });
-                if (!submitted) continue;
-                Apply(command, controller.Seat);
-            }
-
-            _engine.EventEmitted -= OnEngineEvent;
-            int winner = _engine.State.WinningTeam;
+            MatchSetup setup = GameSettings.OnlineEnabled && OnlineMatchFactory != null ? OnlineMatchFactory() : BuildSinglePlayer(seed);
+            var loop = new MatchLoop(setup, table);
+            CurrentLoop = loop;
+            setup.Attach?.Invoke(loop);
+            int winner = -1;
+            yield return loop.Run(SkipPresentation, LocalIsBot, onChoice);
+            winner = loop.WinningTeam;
             GameFinished?.Invoke(winner, seed);
-
-            GameOverView.Choice choice = GameOverView.Choice.PlayAgain;
-            if (!SkipPresentation)
-                yield return table.ShowGameOver(winner, _engine.State.TeamScores, c => choice = c, LocalIsBot ? 2.5f : 0f);
-            onChoice(choice);
         }
 
-        private void BuildControllers(int seed)
+        private MatchSetup BuildSinglePlayer(int seed)
         {
-            _controllers = new SeatController[4];
+            var rules = new RulesConfig();
+            var engine = new TarneebEngine(rules, seed);
             BotConfig botConfig = GameSettings.Difficulty == BotDifficulty.Easy ? BotConfig.Easy() : BotConfig.Normal();
+            var controllers = new SeatController[4];
             for (int s = 0; s < 4; s++)
             {
-                if (s == localSeat && !LocalIsBot) _controllers[s] = new LocalHumanController(s, seed + s);
-                else _controllers[s] = new BotController(s, botConfig, seed + s * 101, !SkipPresentation);
+                if (s == localSeat && !LocalIsBot) controllers[s] = new LocalHumanController(s, seed + s);
+                else controllers[s] = new BotController(s, botConfig, seed + s * 101, !SkipPresentation);
             }
-        }
-
-        private void OnEngineEvent(GameEvent e)
-        {
-            _queue.Enqueue(e);
-            for (int i = 0; i < _controllers.Length; i++) _controllers[i].Observe(e);
-        }
-
-        private IEnumerator DrainQueue()
-        {
-            while (_queue.Count > 0)
+            return new MatchSetup
             {
-                GameEvent e = _queue.Dequeue();
-                if (SkipPresentation) continue;
-                IEnumerator routine = table.Present(e);
-                if (routine != null) yield return routine;
-            }
-        }
-
-        private void Apply(PlayerCommand c, int seat)
-        {
-            CommandResult r;
-            switch (c.Kind)
-            {
-                case CommandKind.Bid: r = _engine.PlaceBid(seat, c.Amount); break;
-                case CommandKind.Pass: r = _engine.Pass(seat); break;
-                case CommandKind.Trump: r = _engine.ChooseTrump(seat, c.Suit); break;
-                default: r = _engine.PlayCard(seat, c.Card); break;
-            }
-            if (!r.Success) Debug.LogWarning("[Game] Seat " + seat + " command " + c.Kind + " rejected: " + r);
+                Engine = engine,
+                Controllers = controllers,
+                LocalSeat = localSeat,
+                SeatNames = SeatNames,
+                Start = () => { engine.StartGame(); return null; }
+            };
         }
     }
 }
