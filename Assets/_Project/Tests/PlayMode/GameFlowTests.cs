@@ -118,51 +118,77 @@ namespace Tarneeb.Tests.PlayMode
         {
             GameController.LocalIsBot = true;
             GameSettings.FixedSeed = 777;
-            PlayerPrefs.SetFloat("tarneeb.speed", 1f);
+            PlayerPrefs.SetFloat("tarneeb.speed", 3f);
             yield return LoadGame();
 
-            int w = 1080, h = 1920;
-            var canvas = GameObject.Find("GameCanvas").GetComponent<Canvas>();
-            var cam = Camera.main;
-            var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            var canvas = SetupCameraCanvas("GameCanvas", out RenderTexture rt, out Camera cam);
+            string dir = ShotDir();
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+            var summary = Object.FindFirstObjectByType<RoundSummaryView>(FindObjectsInactive.Include);
+            var over = Object.FindFirstObjectByType<GameOverView>(FindObjectsInactive.Include);
+            var bid = Object.FindFirstObjectByType<BidPanel>(FindObjectsInactive.Include);
+            float[] times = { 0.4f, 1.0f, 2.0f, 3.5f, 5f, 8f, 11f };
+            int shot = 0; bool gotSummary = false, gotBid = false;
+            float start = Time.time;
+            while (Time.time - start < 80f && !(_finished))
+            {
+                bool due = shot < times.Length && Time.time - start >= times[shot];
+                bool summaryNow = summary.gameObject.activeSelf && summary.GetComponent<CanvasGroup>().alpha > 0.95f && !gotSummary;
+                bool overNow = over.gameObject.activeSelf && over.GetComponent<CanvasGroup>().alpha > 0.95f;
+                if (due || summaryNow || overNow)
+                {
+                    Save(cam, rt, tex, dir, due ? "t" + shot : (summaryNow ? "round_summary" : "game_over"));
+                    if (due) shot++;
+                    if (summaryNow) gotSummary = true;
+                    if (overNow) break;
+                }
+                yield return null;
+            }
+            Assert.IsTrue(gotSummary, "no round summary shown");
+        }
+
+        [UnityTest]
+        public IEnumerator Screenshots_Menu()
+        {
+            PlayerPrefs.DeleteKey("tarneeb.speed");
+            yield return SceneManager.LoadSceneAsync("Menu");
+            yield return null;
+            SetupCameraCanvas("MenuCanvas", out RenderTexture rt, out Camera cam);
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+            yield return null;
+            yield return null;
+            Save(cam, rt, tex, ShotDir(), "menu");
+        }
+
+        private static Canvas SetupCameraCanvas(string canvasName, out RenderTexture rt, out Camera cam)
+        {
+            var canvas = GameObject.Find(canvasName).GetComponent<Canvas>();
+            cam = Camera.main;
+            rt = new RenderTexture(1080, 1920, 24, RenderTextureFormat.ARGB32);
             cam.targetTexture = rt;
             cam.orthographic = true;
             cam.clearFlags = CameraClearFlags.SolidColor;
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = cam;
             canvas.planeDistance = 10f;
+            return canvas;
+        }
 
+        private static string ShotDir()
+        {
             string dir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "Logs", "screens");
             Directory.CreateDirectory(dir);
-            foreach (var f in Directory.GetFiles(dir, "*.png")) File.Delete(f);
+            return dir;
+        }
 
-            yield return new WaitForSeconds(2f);
-            var content = GameObject.Find("GameCanvas/Content");
-            var handGo = GameObject.Find("GameCanvas/Content/Hand");
-            Debug.Log("[Dump] canvasRect=" + ((RectTransform)canvas.transform).rect + " canvasScale=" + canvas.transform.localScale
-                + " content scale=" + content.transform.localScale + " lossy=" + content.transform.lossyScale
-                + " hand lossy=" + handGo.transform.lossyScale + " handRect=" + ((RectTransform)handGo.transform).rect
-                + " cards=" + handGo.transform.childCount
-                + (handGo.transform.childCount > 0 ? " card0 lossy=" + handGo.transform.GetChild(0).lossyScale + " local=" + handGo.transform.GetChild(0).localScale + " size=" + ((RectTransform)handGo.transform.GetChild(0)).rect.size : ""));
-            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
-            float[] times = { 0.6f, 1.6f, 3.2f, 6f, 9f, 12f, 16f, 20f, 25f, 30f };
-            float start = Time.time;
-            int shot = 0;
-            while (shot < times.Length && Time.time - start < 60f)
-            {
-                if (Time.time - start >= times[shot])
-                {
-                    cam.Render();
-                    RenderTexture.active = rt;
-                    tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
-                    tex.Apply();
-                    RenderTexture.active = null;
-                    File.WriteAllBytes(Path.Combine(dir, "shot_" + shot.ToString("00") + ".png"), tex.EncodeToPNG());
-                    shot++;
-                }
-                yield return null;
-            }
-            Assert.AreEqual(times.Length, shot);
+        private static void Save(Camera cam, RenderTexture rt, Texture2D tex, string dir, string name)
+        {
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
         }
     }
 }
