@@ -3,7 +3,7 @@ namespace Tarneeb.Core.Bots
     public sealed class BotConfig
     {
         /// <summary>Tricks the bot assumes its partner will contribute when bidding.</summary>
-        public double PartnerAllowance = 3.0;
+        public double PartnerAllowance = 5.0;
         /// <summary>Chance to play a random legal card instead of the heuristic choice.</summary>
         public double RandomMoveChance = 0.0;
 
