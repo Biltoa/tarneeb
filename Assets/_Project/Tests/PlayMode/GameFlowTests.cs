@@ -136,6 +136,14 @@ namespace Tarneeb.Tests.PlayMode
             Directory.CreateDirectory(dir);
             foreach (var f in Directory.GetFiles(dir, "*.png")) File.Delete(f);
 
+            yield return new WaitForSeconds(2f);
+            var content = GameObject.Find("GameCanvas/Content");
+            var handGo = GameObject.Find("GameCanvas/Content/Hand");
+            Debug.Log("[Dump] canvasRect=" + ((RectTransform)canvas.transform).rect + " canvasScale=" + canvas.transform.localScale
+                + " content scale=" + content.transform.localScale + " lossy=" + content.transform.lossyScale
+                + " hand lossy=" + handGo.transform.lossyScale + " handRect=" + ((RectTransform)handGo.transform).rect
+                + " cards=" + handGo.transform.childCount
+                + (handGo.transform.childCount > 0 ? " card0 lossy=" + handGo.transform.GetChild(0).lossyScale + " local=" + handGo.transform.GetChild(0).localScale + " size=" + ((RectTransform)handGo.transform.GetChild(0)).rect.size : ""));
             var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
             float[] times = { 0.6f, 1.6f, 3.2f, 6f, 9f, 12f, 16f, 20f, 25f, 30f };
             float start = Time.time;
@@ -144,7 +152,6 @@ namespace Tarneeb.Tests.PlayMode
             {
                 if (Time.time - start >= times[shot])
                 {
-                    yield return new WaitForEndOfFrame();
                     cam.Render();
                     RenderTexture.active = rt;
                     tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);

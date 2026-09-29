@@ -19,6 +19,8 @@ namespace Tarneeb.Presentation
         private static readonly Color TeamUs = new Color(0.30f, 0.80f, 0.88f);
         private static readonly Color TeamThem = new Color(0.98f, 0.60f, 0.28f);
 
+        private const float TrickCardScale = 0.8f;
+
         [SerializeField] private CardView cardPrefab;
 
         private HandView _hand;
@@ -271,7 +273,7 @@ namespace Tarneeb.Presentation
             _trickCards[vp].Add(cv);
             AudioManager.Play(Sfx.CardPlace);
             float rot = UnityEngine.Random.Range(-7f, 7f);
-            yield return Tween.Fly(cv.transform, slot.position, rot, 0.85f, 0.3f, Ease.OutBack);
+            yield return Tween.Fly(cv.transform, slot.position, rot, TrickCardScale, 0.3f, Ease.OutBack);
             if (cv != null) cv.transform.SetParent(slot, true);
         }
 

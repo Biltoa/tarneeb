@@ -110,6 +110,11 @@ return new{ok,miss};''' % items
     print('sprites', run_script(code))
     b.sprites = []
 
+def normalize_scales(canvas_name):
+    """gameobject.create keeps world transforms when parenting (worldPositionStays=true), so children created under a
+    scaled parent inherit a compensating scale. Reset every UI child to unit scale."""
+    print('normalized', run_script('''var root=GameObject.Find("%s"); int n=0; foreach(var t in root.GetComponentsInChildren<Transform>(true)){ if(t==root.transform) continue; if(t.localScale!=Vector3.one){ t.localScale=Vector3.one; n++; } } return n;''' % canvas_name))
+
 def clear_scene():
     run_script('''foreach(var go in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()){ if(go.name!="Main Camera") Undo.DestroyObjectImmediate(go);} return 1;''')
 
@@ -142,23 +147,24 @@ def build_card():
     back = b.node("Back", root, comps=("Image",), stretch=[0, 0, 0, 0], sprite='back', color=WHITE, raycast=False)
     dim = b.node("Dim", root, comps=("Image",), stretch=[0, 0, 0, 0], sprite='face', color=[0, 0, 0, 0.5], raycast=False)
     b.flush("Build CardView")
+    normalize_scales("PrefabCanvas")
     assign_sprites(b)
     r = nav.call('unity_run', {"tool": "prefab.create", "args": {"target": "PrefabCanvas/CardView", "path": "Assets/_Project/Resources/Prefabs/CardView.prefab", "connect": False}})
     print('prefab', r['result']['content'][0]['text'][:300])
 
 # ------------------------------------------------------------------ game scene
 def seat(b, parent, name, pos, bubble_pos, count=True):
-    s = b.node(name, parent, comps=("Image", "Tarneeb.Presentation.SeatView"), size=(300, 128), pos=pos, color=[0, 0, 0, 0.42], sprite='panel', imgtype="Sliced", raycast=False)
-    b.node("TurnRing", s, comps=("Image",), stretch=[-6, -6, -6, -6], color=[0.98, 0.84, 0.35, 0.75], sprite='panel', imgtype="Sliced", raycast=False)
-    b.node("TeamStripe", s, comps=("Image",), size=(300, 12), preset='top', pos=(0, -6), color=TEAL, sprite='panel', imgtype="Sliced", raycast=False)
-    b.node("NameLabel", s, comps=("TextMeshProUGUI",), size=(280, 60), pos=(0, -8), text=name, fontSize=44, bold=True)
+    s = b.node(name, parent, comps=("Image", "Tarneeb.Presentation.SeatView"), size=(260, 120), pos=pos, color=[0, 0, 0, 0.42], sprite='panel', imgtype="Sliced", raycast=False)
+    b.node("TurnRing", s, comps=("Image",), stretch=[-6, -6, -6, -6], color=[0.98, 0.84, 0.35, 0.42], sprite='panel', imgtype="Sliced", raycast=False)
+    b.node("TeamStripe", s, comps=("Image",), size=(260, 12), preset='top', pos=(0, -6), color=TEAL, sprite='panel', imgtype="Sliced", raycast=False)
+    b.node("NameLabel", s, comps=("TextMeshProUGUI",), size=(240, 60), pos=(0, -8), text=name, fontSize=44, bold=True)
     b.node("HandAnchor", s, size=(10, 10), pos=(0, 0))
     bub = b.node("Bubble", s, comps=("Image",), size=(220, 74), pos=bubble_pos, color=[1, 1, 1, 0.96], sprite='panel', imgtype="Sliced", raycast=False)
     b.node("BubbleText", bub, comps=("TextMeshProUGUI",), stretch=[8, 4, 8, 4], text="Bid 8", fontSize=42, tcolor=DARK, bold=True)
-    dc = b.node("DealerChip", s, comps=("Image",), size=(50, 50), pos=(-138, 56), color=GOLD, sprite='circle', raycast=False)
+    dc = b.node("DealerChip", s, comps=("Image",), size=(50, 50), pos=(-118, 52), color=GOLD, sprite='circle', raycast=False)
     b.node("Text", dc, comps=("TextMeshProUGUI",), stretch=[0, 0, 0, 0], text="D", fontSize=32, tcolor=DARK, bold=True)
     if count:
-        cb = b.node("CountBadge", s, comps=("Image",), size=(70, 70), pos=(138, 52), color=[0.96, 0.96, 0.96, 1], sprite='circle', raycast=False)
+        cb = b.node("CountBadge", s, comps=("Image",), size=(70, 70), pos=(118, 48), color=[0.96, 0.96, 0.96, 1], sprite='circle', raycast=False)
         b.node("CountText", cb, comps=("TextMeshProUGUI",), stretch=[0, 0, 0, 0], text="13", fontSize=38, tcolor=DARK, bold=True)
     return s
 
@@ -177,20 +183,20 @@ def build_game():
     b.node("TableMat", table, comps=("Image",), size=(960, 900), pos=(0, 90), color=[0.11, 0.42, 0.28, 0.85], sprite='panel', imgtype="Sliced", raycast=False)
     b.node("DeckAnchor", table, size=(10, 10), pos=(0, 60))
     area = b.node("TrickArea", table, size=(400, 400), pos=(0, 60))
-    for n, p in (("Bottom", (0, -105)), ("Right", (125, 0)), ("Top", (0, 105)), ("Left", (-125, 0))):
+    for n, p in (("Bottom", (0, -100)), ("Right", (140, 0)), ("Top", (0, 100)), ("Left", (-140, 0))):
         b.node("Slot_" + n, area, size=(10, 10), pos=p)
     b.flush("Build table")
 
     # seats
     seats = b.node("Seats", C, size=(1080, 1920)); b.op("ui.rect", action="stretch", target=seats, margin=[0, 0, 0, 0])
-    seat(b, seats, "Seat_Top", (0, 545), (0, -100))
-    seat(b, seats, "Seat_Right", (395, 110), (0, 100))
-    seat(b, seats, "Seat_Left", (-395, 110), (0, 100))
-    seat(b, seats, "Seat_Bottom", (0, -395), (0, 100), count=False)
+    seat(b, seats, "Seat_Top", (0, 545), (0, -95))
+    seat(b, seats, "Seat_Right", (355, 110), (0, 95))
+    seat(b, seats, "Seat_Left", (-355, 110), (0, 95))
+    seat(b, seats, "Seat_Bottom", (0, -395), (0, 95), count=False)
     b.flush("Build seats")
 
     # hand
-    b.node("Hand", C, comps=("Tarneeb.Presentation.HandView",), size=(1000, 300), pos=(0, -715))
+    b.node("Hand", C, comps=("Tarneeb.Presentation.HandView",), size=(1000, 300), pos=(0, -690))
     b.flush("Build hand")
 
     # HUD
@@ -254,6 +260,7 @@ def build_game():
     aud = b.node("Audio", None, comps=("AudioSource", "Tarneeb.Presentation.AudioManager"), rect=False)
     gc = b.node("GameController", None, comps=("Tarneeb.Game.GameController",), rect=False)
     b.flush("Build singletons")
+    normalize_scales("GameCanvas")
     assign_sprites(b)
     wire_art_and_audio()
     print('game scene built')
@@ -290,6 +297,7 @@ def build_menu():
     b.node("CardArt", None, comps=("Tarneeb.Presentation.CardArt",), rect=False)
     b.node("Audio", None, comps=("AudioSource", "Tarneeb.Presentation.AudioManager"), rect=False)
     b.flush("Build menu")
+    normalize_scales("MenuCanvas")
     assign_sprites(b)
     wire_art_and_audio()
     print('menu scene built')
