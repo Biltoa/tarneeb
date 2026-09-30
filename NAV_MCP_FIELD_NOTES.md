@@ -4,11 +4,12 @@ Findings from using NAV MCP to build a complete game. See section 3A of the plan
 
 ## Tally
 
-- NAV MCP calls (approx): 0
-- Batches run: 0
-- `unity_script` uses: 0
-- Issues by type: Bug 0 | Missing operation 0 | Guidance 0 | Performance 0 | macOS 0 | UX 0 | Works well 0
-- WebGL validation over time (errors / warnings): 
+- NAV MCP calls (approx): **~410** (259 in the daemon audit log, which records writes and scripts; plus ~150 reads such as `compile.errors`, `console.read`, `scene.query`, `unity_projects`, `unity_skill`, `unity_find`)
+- Batches run: **136** `unity_batch` calls (up to 30 ops each; roughly 3,000 ops in total, most of them repeated rebuilds of the same scenes by `Tools/build_scenes.py`)
+- `unity_script` uses: **78** (Player Settings, sprite import and references, TMP import, URP asset versions, scene clearing, one-off inspections; ~40 of them are the generator's own sprite/scale passes)
+- Issues by type: Bug 5 | Missing operation 1 (7 items) | Guidance 4 | Performance 0 | macOS 0 | UX 5 | Works well 5
+- Errors returned by NAV MCP: 8 of 259 audited calls (3 `E_ASSET_NOT_FOUND` from my sub-asset syntax guesses, 1 each `E_ENUM_INVALID`, `E_NOT_A_RECT`, `E_SCENE_DIRTY`, `E_TYPE_NOT_COMPONENT`, `E_TARGET_NOT_FOUND`); every one had an actionable message
+- WebGL validation over time (errors / warnings): first run 0 / 6 (audio resampling on the SFX) -> after `audio.setImportSettings` 0 / 0 (stayed 0 / 0 for the final build)
 
 ## Setup on macOS
 
@@ -160,6 +161,11 @@ Findings from using NAV MCP to build a complete game. See section 3A of the plan
 - Type: Works well
 - The agent stays quiet in `-batchmode -executeMethod` runs and in CI-style test runs (a single "agent up" log line).
 
-## Prioritized improvements (fill in on Day 5)
+## Prioritized improvements
 
-1.
+1. **Compile on the newest Unity 6 and say so when it does not.** 6000.6 removed `Object.GetInstanceID()` and friends (`CS0619`); use `EntityId` APIs behind `#if UNITY_6000_x`, add a Unity-version CI matrix, and make `unity_projects` report "package failed to compile: N errors" instead of a silent non-connection. (Blocker; cost about 30 minutes plus a 6.3 install.)
+2. **`component.set` must not silently succeed.** Resolve Sprite/AudioClip sub-assets from a file path (or fail with a type-mismatch), and report `warnings` when the value is still null after the write.
+3. **Parenting under a UI parent.** `gameobject.create` should make a RectTransform and use `worldPositionStays = false` (it compensated a scaled parent and inflated a whole hierarchy 5x). Expose `worldPositionStays` on `gameobject.setParent` too.
+4. **Persist what you change.** `build.scenes` (and other settings writers) should call `AssetDatabase.SaveAssets()`; and fail fast (not after the 180 s hold) when the Editor process is gone.
+5. **Missing operations that every project needs:** Player Settings (WebGL compression/template/stripping/orientation), texture/sprite import, run tests + read results, build a player (as a detached process), screenshot / Game view capture, import TMP essentials.
+6. **Friendlier surface:** `atomic` batches by default; type-name disambiguation (prefer `Component` types) and C# enum identifiers in `component.set`; a target resolution for `ui.layoutReport`; `umcpd link/connect/profile` verbs and a persisted profile so the app is optional for headless use.

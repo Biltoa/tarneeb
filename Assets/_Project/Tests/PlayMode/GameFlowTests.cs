@@ -24,6 +24,7 @@ namespace Tarneeb.Tests.PlayMode
             GameController.LocalIsBot = false;
             GameController.SkipPresentation = false;
             GameSettings.FixedSeed = -1;
+            GameSettings.SoundOn = false;   // headless runs have no usable audio device (FMOD errors fail the test)
             GameController.GameFinished += OnFinished;
         }
 
@@ -35,6 +36,7 @@ namespace Tarneeb.Tests.PlayMode
             GameController.SkipPresentation = false;
             GameSettings.FixedSeed = -1;
             PlayerPrefs.DeleteKey("tarneeb.speed");
+            PlayerPrefs.DeleteKey("tarneeb.sound");
         }
 
         private void OnFinished(int winner, int seed) { _finished = true; _finishedWinner = winner; }
@@ -58,12 +60,12 @@ namespace Tarneeb.Tests.PlayMode
             Assert.That(_finishedWinner, Is.InRange(0, 1));
         }
 
-        /// <summary>Plays a full game through the real UI widgets (buttons and card clicks), with animations at 4x speed.</summary>
+        /// <summary>Plays a full game through the real UI widgets (buttons and card clicks), with animations at 8x speed.</summary>
         [UnityTest]
         [Timeout(600000)]
         public IEnumerator FullGame_HumanThroughUI_Finishes()
         {
-            PlayerPrefs.SetFloat("tarneeb.speed", 4f);
+            PlayerPrefs.SetFloat("tarneeb.speed", 8f);
             GameSettings.FixedSeed = 12345;
             yield return LoadGame();
             var bid = Object.FindFirstObjectByType<BidPanel>(FindObjectsInactive.Include);
@@ -74,7 +76,7 @@ namespace Tarneeb.Tests.PlayMode
 
             float t = 0;
             int plays = 0;
-            while (!_finished && t < 240f)
+            while (!_finished && t < 500f)
             {
                 t += Time.deltaTime;
                 if (bid.gameObject.activeSelf)

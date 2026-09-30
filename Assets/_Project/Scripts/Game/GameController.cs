@@ -58,10 +58,8 @@ namespace Tarneeb.Game
             var loop = new MatchLoop(setup, table);
             CurrentLoop = loop;
             setup.Attach?.Invoke(loop);
-            int winner = -1;
+            loop.Completed += winner => GameFinished?.Invoke(winner, seed);
             yield return loop.Run(SkipPresentation, LocalIsBot, onChoice);
-            winner = loop.WinningTeam;
-            GameFinished?.Invoke(winner, seed);
         }
 
         private MatchSetup BuildSinglePlayer(int seed)

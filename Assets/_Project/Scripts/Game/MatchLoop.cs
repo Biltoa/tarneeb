@@ -54,6 +54,8 @@ namespace Tarneeb.Game
         public event Action<int, PlayerCommand> CommandApplied;
         /// <summary>The engine is about to start the next round.</summary>
         public event Action NextRoundStarting;
+        /// <summary>The game is decided (raised before the game-over popup is shown).</summary>
+        public event Action<int> Completed;
         /// <summary>The engine has started the next round (its events have been raised).</summary>
         public event Action NextRoundStarted;
 
@@ -122,6 +124,7 @@ namespace Tarneeb.Game
             engine.EventEmitted -= OnEngineEvent;
             Finished = true;
             WinningTeam = engine.State.WinningTeam;
+            Completed?.Invoke(WinningTeam);
 
             GameOverView.Choice choice = GameOverView.Choice.PlayAgain;
             if (!_skipPresentation)
