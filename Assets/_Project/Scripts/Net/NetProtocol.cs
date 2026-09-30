@@ -15,6 +15,10 @@ namespace Tarneeb.Net
         public const byte Hand = 11;
         /// <summary>Master to one player: [seat].</summary>
         public const byte Init = 12;
+        /// <summary>Client to master: [kind, body] where kind 0 = UTF-8 text, 1 = emoji id. The master infers the seat.</summary>
+        public const byte Chat = 20;
+        /// <summary>Master to all: a relayed chat item, [seat, kind, body].</summary>
+        public const byte ChatOut = 21;
     }
 
     public enum NetCommandKind : byte { GameStart = 0, Bid = 1, Pass = 2, Trump = 3, Play = 4, NextRound = 5 }

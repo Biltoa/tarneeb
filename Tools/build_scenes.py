@@ -153,7 +153,7 @@ def build_card():
     print('prefab', r['result']['content'][0]['text'][:300])
 
 # ------------------------------------------------------------------ game scene
-def seat(b, parent, name, pos, bubble_pos, count=True):
+def seat(b, parent, name, pos, bubble_pos, chat_pos=(0, 190), count=True):
     s = b.node(name, parent, comps=("Image", "Tarneeb.Presentation.SeatView"), size=(260, 120), pos=pos, color=[0, 0, 0, 0.42], sprite='panel', imgtype="Sliced", raycast=False)
     b.node("TurnRing", s, comps=("Image",), stretch=[-6, -6, -6, -6], color=[0.98, 0.84, 0.35, 0.42], sprite='panel', imgtype="Sliced", raycast=False)
     b.node("TeamStripe", s, comps=("Image",), size=(260, 12), preset='top', pos=(0, -6), color=TEAL, sprite='panel', imgtype="Sliced", raycast=False)
@@ -161,12 +161,82 @@ def seat(b, parent, name, pos, bubble_pos, count=True):
     b.node("HandAnchor", s, size=(10, 10), pos=(0, 0))
     bub = b.node("Bubble", s, comps=("Image",), size=(220, 74), pos=bubble_pos, color=[1, 1, 1, 0.96], sprite='panel', imgtype="Sliced", raycast=False)
     b.node("BubbleText", bub, comps=("TextMeshProUGUI",), stretch=[8, 4, 8, 4], text="Bid 8", fontSize=42, tcolor=DARK, bold=True)
+    cbub = b.node("ChatBubble", s, comps=("Image",), size=(380, 130), pos=chat_pos, color=[1, 1, 1, 0.97], sprite='panel', imgtype="Sliced", raycast=False)
+    b.node("Text", cbub, comps=("TextMeshProUGUI",), stretch=[14, 6, 14, 6], text="Good luck!", fontSize=30, tcolor=DARK, bold=True)
+    eb = b.node("EmojiBadge", s, size=(130, 130), pos=chat_pos)
+    b.node("Icon", eb, comps=("Image",), stretch=[0, 0, 0, 0], color=WHITE, raycast=False)
     dc = b.node("DealerChip", s, comps=("Image",), size=(50, 50), pos=(-118, 52), color=GOLD, sprite='circle', raycast=False)
     b.node("Text", dc, comps=("TextMeshProUGUI",), stretch=[0, 0, 0, 0], text="D", fontSize=32, tcolor=DARK, bold=True)
     if count:
         cb = b.node("CountBadge", s, comps=("Image",), size=(70, 70), pos=(118, 48), color=[0.96, 0.96, 0.96, 1], sprite='circle', raycast=False)
         b.node("CountText", cb, comps=("TextMeshProUGUI",), stretch=[0, 0, 0, 0], text="13", fontSize=38, tcolor=DARK, bold=True)
     return s
+
+def build_chat(b, C):
+    ui = b.node("ChatUI", C, comps=("Tarneeb.Presentation.ChatUI",), size=(1080, 1920)); b.op("ui.rect", action="stretch", target=ui, margin=[0, 0, 0, 0])
+    PANEL = [0.05, 0.14, 0.10, 0.98]
+    for name, x in (("EmojiButton", 290), ("ChatButton", 430)):
+        bt = b.node(name, ui, comps=("Image", "Button"), size=(120, 120), pos=(x, -395), color=[0.04, 0.16, 0.12, 0.95], sprite='circle')
+        b.node("Ring", bt, comps=("Image",), stretch=[0, 0, 0, 0], sprite='ring', color=GOLD, raycast=False)
+        if name == "EmojiButton":
+            b.node("Icon", bt, comps=("Image",), size=(78, 78), pos=(0, 0), color=WHITE, raycast=False)
+        else:
+            b.node("Bubble", bt, comps=("Image",), size=(66, 48), pos=(0, 4), sprite='panel', imgtype="Sliced", color=GOLD, raycast=False)
+            for i, dx in enumerate((-17, 0, 17)):
+                b.node("Dot%d" % i, bt, comps=("Image",), size=(10, 10), pos=(dx, 4), sprite='circle', color=DARK, raycast=False)
+            b.node("Unread", bt, comps=("Image",), size=(34, 34), pos=(42, 42), sprite='circle', color=[0.92, 0.22, 0.22, 1], raycast=False)
+
+    # emoji picker: 4 x 3 grid above the buttons
+    ep = b.node("EmojiPanel", ui, size=(1080, 1920)); b.op("ui.rect", action="stretch", target=ep, margin=[0, 0, 0, 0])
+    b.node("Dim", ep, comps=("Image", "Button"), stretch=[0, 0, 0, 0], color=[0, 0, 0, 0.45])
+    pn = b.node("Panel", ep, comps=("Image",), size=(900, 640), pos=(0, -340), color=PANEL, sprite='panel', imgtype="Sliced")
+    xs, ys = [-315, -105, 105, 315], [190, 0, -190]
+    for i in range(12):
+        col, row = i % 4, i // 4
+        c = b.node("Emoji_%d" % i, pn, comps=("Image", "Button"), size=(180, 170), pos=(xs[col], ys[row]), color=[1, 1, 1, 0.10], sprite='panel', imgtype="Sliced")
+        b.node("Icon", c, comps=("Image",), size=(128, 128), pos=(0, 0), color=WHITE, raycast=False)
+
+    # chat window
+    cp = b.node("ChatPanel", ui, size=(1080, 1920)); b.op("ui.rect", action="stretch", target=cp, margin=[0, 0, 0, 0])
+    b.node("Dim", cp, comps=("Image", "Button"), stretch=[0, 0, 0, 0], color=[0, 0, 0, 0.6])
+    pn = b.node("Panel", cp, comps=("Image",), size=(940, 860), pos=(0, 60), color=PANEL, sprite='panel', imgtype="Sliced")
+    b.text("Title", pn, "Chat", (500, 80), (0, 362), 60, GOLD, bold=True)
+    b.button("Close", pn, (90, 90), (400, 362), "X", 44, [0.85, 0.35, 0.32, 1], WHITE)
+    b.node("LogBg", pn, comps=("Image",), size=(880, 380), pos=(0, 140), color=[0, 0, 0, 0.35], sprite='panel', imgtype="Sliced", raycast=False)
+    b.node("Log", pn, comps=("TextMeshProUGUI",), size=(840, 360), pos=(0, 140), text="", fontSize=34, align="left")
+    for i in range(6):
+        col, row = i % 3, i // 3
+        b.button("Quick_%d" % i, pn, (280, 84), ([-300, 0, 300][col], -100 - row * 100), "Quick", 34, [0.13, 0.42, 0.30, 1], WHITE)
+    b.button("Send", pn, (180, 100), (330, -320), "Send", 44)
+
+def build_chat_input():
+    """TMP_InputField needs a viewport/text/placeholder hierarchy; build it in one editor script."""
+    code = '''
+var parent = GameObject.Find("GameCanvas/Content/ChatUI/ChatPanel/Panel");
+var old = parent.transform.Find("Input"); if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+var go = new GameObject("Input", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+Undo.RegisterCreatedObjectUndo(go, "chat input");
+go.transform.SetParent(parent.transform, false);
+var rt = (RectTransform)go.transform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.sizeDelta = new Vector2(640, 100); rt.anchoredPosition = new Vector2(-130, -320);
+var img = go.GetComponent<UnityEngine.UI.Image>();
+img.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Sprites/panel.png"); img.type = UnityEngine.UI.Image.Type.Sliced; img.color = new Color(1f, 1f, 1f, 0.96f);
+var area = new GameObject("TextArea", typeof(RectTransform), typeof(UnityEngine.UI.RectMask2D));
+area.transform.SetParent(go.transform, false);
+var art = (RectTransform)area.transform; art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one; art.offsetMin = new Vector2(22, 8); art.offsetMax = new Vector2(-22, -8);
+TMPro.TextMeshProUGUI Mk(string n) {
+  var t = new GameObject(n, typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+  t.transform.SetParent(area.transform, false);
+  var r = (RectTransform)t.transform; r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
+  var tm = t.GetComponent<TMPro.TextMeshProUGUI>(); tm.fontSize = 40; tm.alignment = TMPro.TextAlignmentOptions.MidlineLeft; return tm; }
+var text = Mk("Text"); text.color = new Color(0.06f, 0.09f, 0.08f, 1f);
+var ph = Mk("Placeholder"); ph.text = "Type a message..."; ph.fontStyle = TMPro.FontStyles.Italic; ph.color = new Color(0.06f, 0.09f, 0.08f, 0.45f);
+var inp = go.AddComponent<TMPro.TMP_InputField>();
+inp.textViewport = art; inp.textComponent = text; inp.placeholder = ph; inp.characterLimit = 60; inp.lineType = TMPro.TMP_InputField.LineType.SingleLine;
+var log = GameObject.Find("GameCanvas/Content/ChatUI/ChatPanel/Panel/Log").GetComponent<TMPro.TextMeshProUGUI>();
+log.alignment = TMPro.TextAlignmentOptions.BottomLeft; log.overflowMode = TMPro.TextOverflowModes.Truncate; log.richText = true; log.textWrappingMode = TMPro.TextWrappingModes.Normal;
+EditorUtility.SetDirty(go);
+return "ok";'''
+    print('chat input', run_script(code))
 
 def build_game():
     b = Builder()
@@ -189,10 +259,10 @@ def build_game():
 
     # seats
     seats = b.node("Seats", C, size=(1080, 1920)); b.op("ui.rect", action="stretch", target=seats, margin=[0, 0, 0, 0])
-    seat(b, seats, "Seat_Top", (0, 545), (0, -95))
-    seat(b, seats, "Seat_Right", (355, 110), (0, 95))
-    seat(b, seats, "Seat_Left", (-355, 110), (0, 95))
-    seat(b, seats, "Seat_Bottom", (0, -395), (0, 95), count=False)
+    seat(b, seats, "Seat_Top", (0, 545), (0, -95), chat_pos=(0, 115))
+    seat(b, seats, "Seat_Right", (355, 110), (0, 95), chat_pos=(-60, -115))
+    seat(b, seats, "Seat_Left", (-355, 110), (0, 95), chat_pos=(60, -115))
+    seat(b, seats, "Seat_Bottom", (0, -395), (0, 95), chat_pos=(-300, 12), count=False)
     b.flush("Build seats")
 
     # hand
@@ -239,6 +309,9 @@ def build_game():
         b.text("Name", p, s, (180, 40), (0, -75), 30, DARK, bold=True)
     b.flush("Build TrumpPicker")
 
+    build_chat(b, C)
+    b.flush("Build chat")
+
     # popups
     rs = b.node("RoundSummary", C, comps=("CanvasGroup", "Tarneeb.Presentation.RoundSummaryView"), size=(1080, 1920)); b.op("ui.rect", action="stretch", target=rs, margin=[0, 0, 0, 0])
     b.node("Dim", rs, comps=("Image",), stretch=[0, 0, 0, 0], color=[0, 0, 0, 0.65])
@@ -262,6 +335,7 @@ def build_game():
     b.flush("Build singletons")
     normalize_scales("GameCanvas")
     assign_sprites(b)
+    build_chat_input()
     wire_art_and_audio()
     print('game scene built')
 

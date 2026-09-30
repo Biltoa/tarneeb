@@ -45,10 +45,12 @@ namespace Tarneeb.Net
                 }
                 int seed = System.Environment.TickCount;
                 var host = new NetHost(t, rules, seed, 0, seatByActor, s => new LocalHumanController(s, seed + s));
+                new NetChat(t, actor => seatByActor.TryGetValue(actor, out int s) ? s : -1, () => 0).Attach();
                 return host.Build(GameController.SeatNames);
             }
 
             var client = new NetClient(t, rules, s => new LocalHumanController(s, s));
+            new NetChat(t, null, () => client.LocalSeat).Attach();
             return client.Build(GameController.SeatNames);
         }
     }

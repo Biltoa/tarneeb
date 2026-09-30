@@ -36,6 +36,7 @@ namespace Tarneeb.Game
             Tween.SpeedMultiplier = GameSettings.GameSpeed;
             if (table == null) table = GetComponentInChildren<TableView>(true);
             if (table == null) table = FindFirstObjectByType<TableView>();
+            ChatService.Reset();
 
             Transform menu = table != null ? table.transform.Find("HUD/MenuButton") : null;
             if (menu != null) menu.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => SceneManager.LoadScene(MenuSceneName));
@@ -60,10 +61,19 @@ namespace Tarneeb.Game
             MatchSetup setup = GameSettings.OnlineEnabled && OnlineMatchFactory != null ? OnlineMatchFactory() : BuildSinglePlayer(seed);
             var loop = new MatchLoop(setup, table);
             CurrentLoop = loop;
+            ChatService.LocalSeat = setup.LocalSeat;
+            if (ChatService.Outgoing == null && !LocalIsBot)
+            {
+                BotChatter chatter = GetComponent<BotChatter>();
+                if (chatter == null) chatter = gameObject.AddComponent<BotChatter>();
+                chatter.Init(setup.LocalSeat, seed);
+            }
             setup.Attach?.Invoke(loop);
             loop.Completed += winner => GameFinished?.Invoke(winner, seed);
             yield return loop.Run(SkipPresentation, LocalIsBot, onChoice);
         }
+
+        private void OnDestroy() => ChatService.Reset();
 
         private MatchSetup BuildSinglePlayer(int seed)
         {

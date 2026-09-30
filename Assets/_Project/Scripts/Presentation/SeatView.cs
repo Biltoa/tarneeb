@@ -1,4 +1,5 @@
 using System.Collections;
+using Tarneeb.Game;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,10 @@ namespace Tarneeb.Presentation
         private Image _stripe;
         private GameObject _turn, _bubble, _dealer, _countBadge;
         private RectTransform _handAnchor;
-        private Coroutine _bubbleRoutine;
+        private Coroutine _bubbleRoutine, _chatRoutine;
+        private GameObject _chatBubble, _emojiBadge;
+        private TMP_Text _chatText;
+        private Image _emojiImage;
         private bool _bound;
 
         public RectTransform HandAnchor { get { Bind(); return _handAnchor; } }
@@ -36,9 +40,45 @@ namespace Tarneeb.Presentation
                 _countBadge = badge.gameObject;
                 _count = UiBind.Get<TMP_Text>(transform, "CountBadge/CountText");
             }
+            Transform chat = transform.Find("ChatBubble");          // optional: older scenes have no chat
+            if (chat != null) { _chatBubble = chat.gameObject; _chatText = chat.Find("Text").GetComponent<TMP_Text>(); _chatBubble.SetActive(false); }
+            Transform emoji = transform.Find("EmojiBadge");
+            if (emoji != null) { _emojiBadge = emoji.gameObject; _emojiImage = emoji.Find("Icon").GetComponent<Image>(); _emojiBadge.SetActive(false); }
             _turn.SetActive(false);
             _bubble.SetActive(false);
             _dealer.SetActive(false);
+        }
+
+        /// <summary>Shows a chat line or emoji above this seat for a few seconds; a new one replaces the old.</summary>
+        public void ShowChat(ChatMessage m)
+        {
+            Bind();
+            if (_chatBubble == null || _emojiBadge == null) return;
+            if (_chatRoutine != null) StopCoroutine(_chatRoutine);
+            _chatRoutine = StartCoroutine(ChatRoutine(m));
+        }
+
+        private IEnumerator ChatRoutine(ChatMessage m)
+        {
+            _chatBubble.SetActive(false);
+            _emojiBadge.SetActive(false);
+            if (m.IsEmoji)
+            {
+                _emojiImage.sprite = EmojiArt.Get(m.EmojiId);
+                _emojiBadge.SetActive(true);
+                var rt = (RectTransform)_emojiBadge.transform;
+                rt.localScale = Vector3.zero;
+                yield return Tween.Local(rt, rt.anchoredPosition, 0f, 1f, 0.22f);
+                yield return new WaitForSeconds(2.4f);
+                _emojiBadge.SetActive(false);
+            }
+            else
+            {
+                _chatText.text = m.Text;
+                _chatBubble.SetActive(true);
+                yield return new WaitForSeconds(2.0f + m.Text.Length * 0.05f);
+                _chatBubble.SetActive(false);
+            }
         }
 
         public void Setup(string playerName, Color teamColor)

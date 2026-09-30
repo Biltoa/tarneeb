@@ -5,6 +5,7 @@ using Tarneeb.Core.Cards;
 using Tarneeb.Core.Events;
 using Tarneeb.Core.Rules;
 using Tarneeb.Core.State;
+using Tarneeb.Game;
 using UnityEngine;
 
 namespace Tarneeb.Presentation
@@ -93,6 +94,13 @@ namespace Tarneeb.Presentation
             _hud.SetTrump(null);
             _hud.SetContract("Dealing...");
             _hud.SetStatus("");
+        }
+
+        /// <summary>Shows a chat line or emoji above the given engine seat (ignored before a game has begun).</summary>
+        public void ShowChat(int seat, ChatMessage m)
+        {
+            Bind();
+            if (_map != null) SeatFor(seat).ShowChat(m);
         }
 
         private SeatView SeatFor(int seat) => _seats[(int)_map.ToView(seat)];
