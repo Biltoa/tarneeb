@@ -66,3 +66,18 @@ Append after each work session: what was built, decisions and why, bugs found, A
 - Bugs found / fixed:
   - After the MacBook restart `umcpd` was not running, so every NAV call was refused; restarted with `umcpd --profile full` (binary is inside `/Applications/NAV MCP (arm64).app/Contents/Resources/`). The Playwright Python package was also gone; installed into a scratch venv.
 - Needs developer review: the sound itself was not audible-tested (headless); please check the first click/card sound on a real browser.
+
+## Day 3, session 5 (chat, emoji, online lobby)
+- Built:
+  - **Chat + emoji** (requested by the developer, the plan listed chat as out of scope): emoji picker (12 original sprites from `Tools/gen_emoji.py`), chat window with quick phrases and a text box, bubbles above the sender's seat, unread dot. `ChatService` is the single UI entry point; offline bots answer sometimes, online `NetChat` relays through the master (seat inferred from the sender, rate limit, text re-cleaned on the master).
+  - **Online lobby**: `ILobby` abstraction, "Play Online" window in the Menu (quick match, private room code, waiting room), `PhotonLobby` + `PhotonTransport` (compiled only when PUN 2 is imported), `LoopbackLobby` for tests. Same seat names on every screen ("You" for the local seat).
+  - Tests: 60 EditMode (10 new chat/net) and 6 PlayMode (UI-driven chat, and the whole online path through the loopback lobby) all green.
+- Decisions:
+  - Free text is Latin-only and English-filtered: the TMP font has no Arabic glyphs, so Arabic input would show boxes. Arabic chat waits for the Arabic localization stretch goal. The word list is minimal on purpose; the master also rate-limits.
+  - Chat rides the game transport (PUN events) instead of a Photon Chat app: one connection, nothing extra to create or pay for.
+  - The Photon App ID lives in a git-ignored settings asset.
+- Bugs found / fixed:
+  - Non-power-of-two atlas (512x384) was rescaled by Unity, which shifted the sprite rows; made it 512x512.
+  - My own test expectations for masked strings were off by a character twice; the code was right.
+- Needs developer review: the Photon free plan is "development only" (accepted risk, decision 2); word list; chat on a real phone (the TMP input field opens the browser keyboard only if the Unity 6 mobile input support works, quick phrases are the fallback).
+- Waiting on: PUN 2 import from the Asset Store (needs the developer's Unity login), then App ID setup and a two-tab test.

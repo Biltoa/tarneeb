@@ -34,13 +34,30 @@ Status: **complete and covered by headless tests, but switched off** (`GameSetti
 | `OnlineSession.cs` | Builds the host/client `MatchSetup` for the Game scene |
 | `Photon/` | `PhotonTransport` and `PhotonLobby`, compiled only when PUN 2 defines `PHOTON_UNITY_NETWORKING` |
 
+## Chat and emoji
+
+`ChatService` (Game) is the only thing the UI talks to. Offline it echoes to the local seat and `BotChatter` lets a bot answer
+sometimes. Online, `NetChat` takes over: every player sends `NetCodes.Chat` to the master, which infers the seat from the sender
+(nobody can speak as another seat), rate-limits (0.8 s per seat), re-cleans the text and relays `NetCodes.ChatOut` to everyone
+including itself. Text is 60 characters, Latin only (the font has no Arabic glyphs yet), rich-text brackets are stripped, links and
+a small word list are masked (`ChatText`). Emoji are 12 sprites cut from `Resources/Emoji/emoji_atlas.png` (`Tools/gen_emoji.py`).
+
+## Lobby
+
+The Menu talks to `ILobby` (Game/Lobby.cs), never to Photon. `PhotonLobby` (compiled only with PUN) implements it: Quick Match
+(random public room, max 4), Private Room (5-letter code), waiting room, master presses Start (bots fill empty seats; a full table
+auto-starts after 3 s). Starting sets a room property that every client sees, then each loads the Game scene. `PhotonTransport`
+is created when the room is joined and buffers events until the Game scene subscribes. `LoopbackLobby` is the same interface
+in-process; `OnlineFlowTests` drives Menu window, host match, chat and leaving with it.
+
 ## Turning it on
 
-1. Create a Photon account, make a PUN application and copy the App ID.
-2. Import **PUN 2 - FREE** (Asset Store). If it fails on Unity 6, use Photon Fusion 2 (Shared Mode) instead and
-   reimplement only `INetTransport`.
-3. Paste the App ID in `PhotonServerSettings`, set the fixed region (the lobby uses `eu`).
-4. Set `GameSettings.OnlineEnabled = true`, add a lobby screen that calls `PhotonLobby.QuickMatch()` /
-   `CreatePrivate(code)` / `JoinPrivate(code)` and, when the room is ready, sets `OnlineSession.Transport` (a
-   `PhotonTransport` instance) and loads the `Game` scene.
-5. Test with two browser tabs plus one Editor.
+1. Import **PUN 2 - FREE** from the Asset Store (Package Manager, My Assets). It adds the `PHOTON_UNITY_NETWORKING` define, which
+   compiles `Net/Photon/`.
+2. In the PUN Setup Wizard paste the App ID. It is stored in `Assets/Photon/.../PhotonServerSettings.asset`, which is git-ignored so
+   the ID is not committed (it is still visible in any WebGL build, like every Photon client ID).
+3. Nothing else: `GameSettings.OnlineEnabled` is true when a lobby backend is registered (`GameSettings.OnlineAllowed` is the kill
+   switch), and the "Play Online" button opens the lobby window.
+4. Test with two browser tabs (or the Editor plus one tab).
+
+Free-plan note: the free 20 CCU plan is labelled "for development only" by Photon; a public site should move to a paid plan.
