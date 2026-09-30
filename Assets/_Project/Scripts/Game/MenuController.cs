@@ -22,7 +22,9 @@ namespace Tarneeb.Game
             Button online = UiBind.Get<Button>(transform, "OnlineButton");
             _online = UiBind.Get<TMP_Text>(transform, "OnlineButton/Label");
             online.interactable = GameSettings.OnlineEnabled;
-            _online.text = GameSettings.OnlineEnabled ? "Play Online" : "Play Online (coming soon)";
+            _online.text = GameSettings.OnlineEnabled ? "Play Online" : "Play Online (unavailable)";
+            LobbyScreen lobby = transform.parent != null ? transform.parent.Find("OnlinePanel")?.GetComponent<LobbyScreen>() : null;
+            if (lobby != null) online.onClick.AddListener(() => { AudioManager.Play(Sfx.Click); lobby.Open(); });
 
             _difficulty = UiBind.Get<TMP_Text>(transform, "DifficultyButton/Label");
             UiBind.Get<Button>(transform, "DifficultyButton").onClick.AddListener(() =>

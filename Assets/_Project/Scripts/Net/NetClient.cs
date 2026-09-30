@@ -24,6 +24,8 @@ namespace Tarneeb.Net
 
         public bool HostLeft { get; private set; }
         public int LocalSeat => _seat;
+        /// <summary>Optional: seat names once the local seat is known (the local seat reads "You").</summary>
+        public Func<int, string[]> NamesForSeat;
 
         /// <param name="inputController">Factory for the widgets/decision source of the local seat (LocalHumanController; a bot in tests).</param>
         public NetClient(INetTransport net, RulesConfig rules, Func<int, SeatController> inputController)
@@ -66,6 +68,7 @@ namespace Tarneeb.Net
                 yield return null;
             }
             setup.LocalSeat = _seat;
+            if (NamesForSeat != null) setup.SeatNames = NamesForSeat(_seat);
             var c = new SeatController[4];
             for (int s = 0; s < 4; s++)
             {

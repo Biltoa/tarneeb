@@ -9,6 +9,8 @@
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
 /Assets/Plugins/Editor/JetBrains*
+# Photon App ID lives in this asset; keep it out of the public repo (see Assets/_Project/Scripts/Net/README.md)
+/Assets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset
 /Assets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset.meta
 
 # IDE

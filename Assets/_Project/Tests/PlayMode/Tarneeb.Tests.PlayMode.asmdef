@@ -4,6 +4,7 @@
     "references": [
         "Tarneeb.Core",
         "Tarneeb.Unity",
+        "Tarneeb.Net",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
         "UnityEngine.TestRunner",

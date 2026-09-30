@@ -22,6 +22,8 @@ namespace Tarneeb.Game
         public static bool SkipPresentation;
         /// <summary>Set by the Net layer when online play is enabled; null means single player.</summary>
         public static Func<MatchSetup> OnlineMatchFactory;
+        /// <summary>Set by the lobby when the master starts a room; the next Game scene plays online instead of against bots.</summary>
+        public static bool OnlineRequested;
         /// <summary>Raised once per finished game with (winningTeam, seed).</summary>
         public static event Action<int, int> GameFinished;
 
@@ -45,7 +47,7 @@ namespace Tarneeb.Game
             {
                 GameOverView.Choice choice = GameOverView.Choice.None;
                 yield return PlayOneGame(c => choice = c);
-                bool online = GameSettings.OnlineEnabled && OnlineMatchFactory != null;
+                bool online = OnlineRequested && OnlineMatchFactory != null;
                 if ((choice == GameOverView.Choice.Menu || online) && Application.CanStreamedLevelBeLoaded(MenuSceneName))
                 {
                     SceneManager.LoadScene(MenuSceneName);
@@ -58,7 +60,7 @@ namespace Tarneeb.Game
         private IEnumerator PlayOneGame(Action<GameOverView.Choice> onChoice)
         {
             int seed = GameSettings.FixedSeed >= 0 ? GameSettings.FixedSeed : Environment.TickCount;
-            MatchSetup setup = GameSettings.OnlineEnabled && OnlineMatchFactory != null ? OnlineMatchFactory() : BuildSinglePlayer(seed);
+            MatchSetup setup = OnlineRequested && OnlineMatchFactory != null ? OnlineMatchFactory() : BuildSinglePlayer(seed);
             var loop = new MatchLoop(setup, table);
             CurrentLoop = loop;
             ChatService.LocalSeat = setup.LocalSeat;
@@ -73,11 +75,18 @@ namespace Tarneeb.Game
             yield return loop.Run(SkipPresentation, LocalIsBot, onChoice);
         }
 
-        private void OnDestroy() => ChatService.Reset();
+        private void OnDestroy()
+        {
+            ChatService.Reset();
+            if (!OnlineRequested) return;
+            OnlineRequested = false;                 // leaving the table: drop out of the room too
+            LobbyProvider.Current?.Leave();
+        }
 
         private MatchSetup BuildSinglePlayer(int seed)
         {
             var rules = new RulesConfig();
+            GameSettings.TurnTimerSeconds = 0;       // an earlier online game may have set the human turn timer
             var engine = new TarneebEngine(rules, seed);
             BotConfig botConfig = GameSettings.Difficulty == BotDifficulty.Easy ? BotConfig.Easy() : BotConfig.Normal();
             var controllers = new SeatController[4];

@@ -209,15 +209,15 @@ def build_chat(b, C):
         b.button("Quick_%d" % i, pn, (280, 84), ([-300, 0, 300][col], -100 - row * 100), "Quick", 34, [0.13, 0.42, 0.30, 1], WHITE)
     b.button("Send", pn, (180, 100), (330, -320), "Send", 44)
 
-def build_chat_input():
+def make_input(parent_path, name, size, pos, placeholder, limit):
     """TMP_InputField needs a viewport/text/placeholder hierarchy; build it in one editor script."""
     code = '''
-var parent = GameObject.Find("GameCanvas/Content/ChatUI/ChatPanel/Panel");
-var old = parent.transform.Find("Input"); if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
-var go = new GameObject("Input", typeof(RectTransform), typeof(UnityEngine.UI.Image));
-Undo.RegisterCreatedObjectUndo(go, "chat input");
+var parent = GameObject.Find("%(parent)s");
+var old = parent.transform.Find("%(name)s"); if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+var go = new GameObject("%(name)s", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+Undo.RegisterCreatedObjectUndo(go, "input");
 go.transform.SetParent(parent.transform, false);
-var rt = (RectTransform)go.transform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.sizeDelta = new Vector2(640, 100); rt.anchoredPosition = new Vector2(-130, -320);
+var rt = (RectTransform)go.transform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.sizeDelta = new Vector2(%(w)d, %(h)d); rt.anchoredPosition = new Vector2(%(x)d, %(y)d);
 var img = go.GetComponent<UnityEngine.UI.Image>();
 img.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Sprites/panel.png"); img.type = UnityEngine.UI.Image.Type.Sliced; img.color = new Color(1f, 1f, 1f, 0.96f);
 var area = new GameObject("TextArea", typeof(RectTransform), typeof(UnityEngine.UI.RectMask2D));
@@ -229,14 +229,19 @@ TMPro.TextMeshProUGUI Mk(string n) {
   var r = (RectTransform)t.transform; r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
   var tm = t.GetComponent<TMPro.TextMeshProUGUI>(); tm.fontSize = 40; tm.alignment = TMPro.TextAlignmentOptions.MidlineLeft; return tm; }
 var text = Mk("Text"); text.color = new Color(0.06f, 0.09f, 0.08f, 1f);
-var ph = Mk("Placeholder"); ph.text = "Type a message..."; ph.fontStyle = TMPro.FontStyles.Italic; ph.color = new Color(0.06f, 0.09f, 0.08f, 0.45f);
+var ph = Mk("Placeholder"); ph.text = "%(ph)s"; ph.fontStyle = TMPro.FontStyles.Italic; ph.color = new Color(0.06f, 0.09f, 0.08f, 0.45f);
 var inp = go.AddComponent<TMPro.TMP_InputField>();
-inp.textViewport = art; inp.textComponent = text; inp.placeholder = ph; inp.characterLimit = 60; inp.lineType = TMPro.TMP_InputField.LineType.SingleLine;
+inp.textViewport = art; inp.textComponent = text; inp.placeholder = ph; inp.characterLimit = %(limit)d; inp.lineType = TMPro.TMP_InputField.LineType.SingleLine;
+EditorUtility.SetDirty(go);
+return "ok";''' % dict(parent=parent_path, name=name, w=size[0], h=size[1], x=pos[0], y=pos[1], ph=placeholder, limit=limit)
+    print('input', name, run_script(code))
+
+def build_chat_input():
+    make_input("GameCanvas/Content/ChatUI/ChatPanel/Panel", "Input", (640, 100), (-130, -320), "Type a message...", 60)
+    print('chat log', run_script('''
 var log = GameObject.Find("GameCanvas/Content/ChatUI/ChatPanel/Panel/Log").GetComponent<TMPro.TextMeshProUGUI>();
 log.alignment = TMPro.TextAlignmentOptions.BottomLeft; log.overflowMode = TMPro.TextOverflowModes.Truncate; log.richText = true; log.textWrappingMode = TMPro.TextWrappingModes.Normal;
-EditorUtility.SetDirty(go);
-return "ok";'''
-    print('chat input', run_script(code))
+return "ok";'''))
 
 def build_game():
     b = Builder()
@@ -350,6 +355,24 @@ au.cardFlip=A("card_flip"); au.cardPlace=A("card_place"); au.trickWin=A("trick_w
 return new{artOk=art.heart!=null, audioOk=au.click!=null};'''
     print('wire', run_script(code))
 
+def build_online_panel(b, C):
+    """The Play Online window (LobbyScreen): quick match, private room by code, and the waiting room."""
+    op = b.node("OnlinePanel", C, comps=("Tarneeb.Game.LobbyScreen",), size=(1080, 1920)); b.op("ui.rect", action="stretch", target=op, margin=[0, 0, 0, 0])
+    b.node("Dim", op, comps=("Image",), stretch=[0, 0, 0, 0], color=[0, 0, 0, 0.75])
+    pn = b.node("Panel", op, comps=("Image",), size=(900, 1000), pos=(0, 0), color=[0.05, 0.14, 0.10, 1], sprite='panel', imgtype="Sliced")
+    b.text("Title", pn, "Play Online", (800, 100), (0, 410), 76, GOLD, bold=True)
+    mv = b.node("MenuView", pn, size=(900, 800), pos=(0, 40))
+    b.button("Quick", mv, (700, 130), (0, 250), "Quick match", 54)
+    b.button("Create", mv, (700, 120), (0, 90), "Create private room", 46, [0.13, 0.42, 0.30, 1], WHITE)
+    b.button("Join", mv, (230, 110), (255, -70), "Join", 46)
+    b.button("Back", mv, (400, 100), (0, -280), "Back", 44, [0.85, 0.85, 0.82, 1], DARK)
+    rv = b.node("RoomView", pn, size=(900, 800), pos=(0, 40))
+    b.text("RoomCode", rv, "", (800, 110), (0, 210), 68, WHITE, bold=True)
+    b.text("Players", rv, "", (800, 70), (0, 90), 48, TEAL, bold=True)
+    b.button("Start", rv, (600, 130), (0, -70), "Start game", 54)
+    b.button("Leave", rv, (400, 100), (0, -280), "Leave", 44, [0.85, 0.35, 0.32, 1], WHITE)
+    b.text("Status", pn, "", (820, 150), (0, -420), 36, [1, 0.95, 0.75, 1], bold=True)
+
 def build_menu():
     b = Builder()
     clear_scene()
@@ -368,11 +391,13 @@ def build_menu():
     b.button("SpeedButton", m, (700, 110), (0, -400), "Speed: Normal", 42, [0.13, 0.42, 0.30, 1], WHITE)
     b.button("SoundButton", m, (700, 110), (0, -530), "Sound: On", 42, [0.13, 0.42, 0.30, 1], WHITE)
     b.text("Footer", m, "Portfolio prototype", (900, 50), (0, -880), 32, [1, 1, 1, 0.6])
+    build_online_panel(b, C)
     b.node("CardArt", None, comps=("Tarneeb.Presentation.CardArt",), rect=False)
     b.node("Audio", None, comps=("AudioSource", "Tarneeb.Presentation.AudioManager"), rect=False)
     b.flush("Build menu")
     normalize_scales("MenuCanvas")
     assign_sprites(b)
+    make_input("MenuCanvas/Content/OnlinePanel/Panel/MenuView", "CodeInput", (420, 110), (-140, -70), "ROOM CODE", 5)
     wire_art_and_audio()
     print('menu scene built')
 

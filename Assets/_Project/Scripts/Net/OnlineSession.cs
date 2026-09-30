@@ -7,18 +7,28 @@ using UnityEngine;
 namespace Tarneeb.Net
 {
     /// <summary>
-    /// Glue between a connected room (an INetTransport) and the Game scene. Online play is switched off by
-    /// GameSettings.OnlineEnabled until Photon accounts are connected; nothing here runs in the default build.
+    /// Glue between a connected room (an INetTransport) and the Game scene. Runs only when a room is active (GameController.OnlineRequested);
+    /// single player never touches it.
     /// </summary>
     public static class OnlineSession
     {
         /// <summary>Set by the lobby once the room is ready and the Game scene is about to load.</summary>
         public static INetTransport Transport;
 
+        private static readonly string[] BaseNames = { "Omar", "Karim", "Nour", "Salma" };
+
+        /// <summary>Same seat names on every screen, except the local seat which always reads "You".</summary>
+        public static string[] NamesFor(int localSeat)
+        {
+            var n = (string[])BaseNames.Clone();
+            if (localSeat >= 0 && localSeat < 4) n[localSeat] = "You";
+            return n;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Register()
         {
-            if (GameSettings.OnlineEnabled) GameController.OnlineMatchFactory = CreateMatch;
+            GameController.OnlineMatchFactory = CreateMatch;
         }
 
         /// <summary>Master builds the authoritative host; everyone else builds a replica client.</summary>
@@ -46,12 +56,13 @@ namespace Tarneeb.Net
                 int seed = System.Environment.TickCount;
                 var host = new NetHost(t, rules, seed, 0, seatByActor, s => new LocalHumanController(s, seed + s));
                 new NetChat(t, actor => seatByActor.TryGetValue(actor, out int s) ? s : -1, () => 0).Attach();
-                return host.Build(GameController.SeatNames);
+                return host.Build(NamesFor(0));
             }
 
             var client = new NetClient(t, rules, s => new LocalHumanController(s, s));
             new NetChat(t, null, () => client.LocalSeat).Attach();
-            return client.Build(GameController.SeatNames);
+            client.NamesForSeat = NamesFor;
+            return client.Build(NamesFor(-1));
         }
     }
 }

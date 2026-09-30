@@ -11,8 +11,11 @@ namespace Tarneeb.Config
         private const string SoundKey = "tarneeb.sound";
         private const string SpeedKey = "tarneeb.speed";
 
-        /// <summary>Online play stays disabled until Photon accounts are connected (see Net/README).</summary>
-        public const bool OnlineEnabled = false;
+        /// <summary>Kill switch: set to false to hide online play even when Photon is installed (see Net/README).</summary>
+        public const bool OnlineAllowed = true;
+
+        /// <summary>True when a matchmaking backend (PUN 2) is compiled into this build.</summary>
+        public static bool OnlineEnabled => OnlineAllowed && Game.LobbyProvider.Available;
 
         public static BotDifficulty Difficulty
         {
