@@ -37,6 +37,9 @@ namespace Tarneeb.Game
             if (table == null) table = GetComponentInChildren<TableView>(true);
             if (table == null) table = FindFirstObjectByType<TableView>();
 
+            Transform menu = table != null ? table.transform.Find("HUD/MenuButton") : null;
+            if (menu != null) menu.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => SceneManager.LoadScene(MenuSceneName));
+
             while (true)
             {
                 GameOverView.Choice choice = GameOverView.Choice.None;
