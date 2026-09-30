@@ -16,6 +16,8 @@ namespace Tarneeb.Tests.PlayMode
     /// <summary>The whole online path except the network: Menu window, host match, chat relay, leaving. Uses LoopbackLobby.</summary>
     public class OnlineFlowTests
     {
+        private System.Func<ILobby> _savedFactory;
+
         [SetUp]
         public void SetUp()
         {
@@ -25,6 +27,7 @@ namespace Tarneeb.Tests.PlayMode
             GameSettings.SoundOn = false;
             GameSettings.FixedSeed = 99;
             PlayerPrefs.SetFloat("tarneeb.speed", 2f);
+            _savedFactory = LobbyProvider.Factory;
             LobbyProvider.Current = null;
             LobbyProvider.Factory = () => new LoopbackLobby();
         }
@@ -32,7 +35,7 @@ namespace Tarneeb.Tests.PlayMode
         [TearDown]
         public void TearDown()
         {
-            LobbyProvider.Factory = null;
+            LobbyProvider.Factory = _savedFactory;
             LobbyProvider.Current = null;
             OnlineSession.Transport = null;
             GameController.OnlineRequested = false;

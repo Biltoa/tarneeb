@@ -1,7 +1,7 @@
 # Online multiplayer (implemented, disabled)
 
-Status: **complete and covered by headless tests, but switched off** (`GameSettings.OnlineEnabled = false`, the menu shows
-"Play Online (coming soon)") until a Photon account and PUN 2 App ID are connected.
+Status: **working.** Verified with two browser tabs through the Photon cloud (quick match, host start, emoji), plus headless tests
+(loopback, and `PhotonLiveTests` against the real cloud). Without PUN 2 imported the menu shows "Play Online (unavailable)".
 
 ## Model
 
@@ -53,7 +53,8 @@ in-process; `OnlineFlowTests` drives Menu window, host match, chat and leaving w
 ## Turning it on
 
 1. Import **PUN 2 - FREE** from the Asset Store (Package Manager, My Assets). It adds the `PHOTON_UNITY_NETWORKING` define, which
-   compiles `Net/Photon/`.
+   compiles `Net/Photon/`. `Assets/Photon/` is git-ignored (third-party, 39 MB), and so is the define it adds to
+   `ProjectSettings.asset`, so a fresh clone builds single player until PUN is imported.
 2. In the PUN Setup Wizard paste the App ID. It is stored in `Assets/Photon/.../PhotonServerSettings.asset`, which is git-ignored so
    the ID is not committed (it is still visible in any WebGL build, like every Photon client ID).
 3. Nothing else: `GameSettings.OnlineEnabled` is true when a lobby backend is registered (`GameSettings.OnlineAllowed` is the kill

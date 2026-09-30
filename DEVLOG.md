@@ -81,3 +81,12 @@ Append after each work session: what was built, decisions and why, bugs found, A
   - My own test expectations for masked strings were off by a character twice; the code was right.
 - Needs developer review: the Photon free plan is "development only" (accepted risk, decision 2); word list; chat on a real phone (the TMP input field opens the browser keyboard only if the Unity 6 mobile input support works, quick phrases are the fallback).
 - Waiting on: PUN 2 import from the Asset Store (needs the developer's Unity login), then App ID setup and a two-tab test.
+
+## Day 3, session 6 (PUN 2 connected)
+- Built:
+  - PUN 2 imported by the developer; our `Net/Photon` code compiled on the first try. App ID stored in the git-ignored `PhotonServerSettings.asset` (the setup wizard had not saved it).
+  - `PhotonLiveTests` (Category Network): one client creates a private room on the real Photon cloud, starts the host match, chats through `PhotonTransport`, leaves. Passed.
+  - `Tools/webgl_online.py`: two headless Chromium tabs on the WebGL build. Both quick-match into one table (2 / 4 players), host starts, both see the game, an emoji from A shows on B's screen. No console errors in either tab. WebGL build 14.7 MB.
+- Decisions:
+  - `Assets/Photon/` is git-ignored (third-party Asset Store package, 39 MB, redistribution terms), and the `PHOTON_UNITY_NETWORKING` define PUN wrote into ProjectSettings is deliberately not committed: a clone without PUN would otherwise fail to compile. PUN's importer re-adds the define.
+- Needs developer review: try it yourself with a second device; disconnect handling (a guest leaving is replaced by a bot, a host leaving ends the game); Photon free plan is development-only.

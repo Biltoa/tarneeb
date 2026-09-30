@@ -9,9 +9,9 @@
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
 /Assets/Plugins/Editor/JetBrains*
-# Photon App ID lives in this asset; keep it out of the public repo (see Assets/_Project/Scripts/Net/README.md)
-/Assets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset
-/Assets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset.meta
+# PUN 2 is a 39 MB third-party Asset Store package (import it yourself, see Net/README.md); its App ID lives in PhotonServerSettings.asset; keep it out of the public repo (see Assets/_Project/Scripts/Net/README.md)
+/Assets/Photon/
+/Assets/Photon.meta
 
 # IDE
 .vs/
