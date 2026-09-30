@@ -45,7 +45,7 @@ namespace Tarneeb.Game
             _join.onClick.AddListener(JoinClicked);
             _code.characterLimit = 5;
             _code.onValueChanged.AddListener(v => { string u = v.ToUpperInvariant(); if (u != v) _code.text = u; });
-            UiBind.Get<Button>(transform, "Panel/RoomView/Start").onClick.AddListener(() => { AudioManager.Play(Sfx.Click); _lobby?.StartMatch(); });
+            UiBind.Get<Button>(transform, "Panel/RoomView/Start").onClick.AddListener(() => { _lobby?.StartMatch(); });
             UiBind.Get<Button>(transform, "Panel/RoomView/Leave").onClick.AddListener(LeaveClicked);
             UiBind.Get<Button>(transform, "Panel/MenuView/Back").onClick.AddListener(Close);
             gameObject.SetActive(false);
@@ -66,7 +66,6 @@ namespace Tarneeb.Game
 
         public void Close()
         {
-            AudioManager.Play(Sfx.Click);
             Unhook();
             if (_lobby != null && _lobby.InRoom) _lobby.Leave();
             gameObject.SetActive(false);
@@ -85,7 +84,6 @@ namespace Tarneeb.Game
 
         private void Begin(string message, System.Action<ILobby> action)
         {
-            AudioManager.Play(Sfx.Click);
             _status.text = message;
             SetButtons(false);
             action(_lobby);
@@ -100,7 +98,6 @@ namespace Tarneeb.Game
 
         private void LeaveClicked()
         {
-            AudioManager.Play(Sfx.Click);
             if (_countdown != null) { StopCoroutine(_countdown); _countdown = null; }
             _lobby.Leave();
             _status.text = "";
@@ -159,7 +156,7 @@ namespace Tarneeb.Game
         {
             Unhook();
             GameController.OnlineRequested = true;
-            SceneManager.LoadScene(MenuController.GameSceneName);
+            ScreenFader.Go(MenuController.GameSceneName);
         }
     }
 }

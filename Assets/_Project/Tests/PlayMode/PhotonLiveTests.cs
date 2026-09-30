@@ -82,6 +82,8 @@ namespace Tarneeb.Tests.PlayMode
             Assert.IsTrue(bid.gameObject.activeSelf || hand.AwaitingInput, "host game never asked the local player to act");
 
             GameObject.Find("MenuButton").GetComponent<Button>().onClick.Invoke();
+            yield return new WaitForSeconds(0.5f);
+            Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include).transform.Find("Panel/Leave").GetComponent<Button>().onClick.Invoke();
             t = 0; while (SceneManager.GetActiveScene().name != "Menu" && t < 10f) { t += Time.deltaTime; yield return null; }
             yield return new WaitForSeconds(1f);
             Assert.IsFalse(LobbyProvider.Current.InRoom);

@@ -45,13 +45,24 @@ namespace Tarneeb.Presentation
             sb.Append(declarerName).Append(" bid <b>").Append(s.Bid).Append("</b>, trump <b>").Append(s.Trump).Append("</b>\n");
             sb.Append("Declarers took <b>").Append(s.DeclaringTricks).Append("</b> tricks, defenders <b>").Append(s.DefendingTricks).Append("</b>\n\n");
             sb.Append("Us  ").Append(Signed(myDelta)).Append("      Them  ").Append(Signed(theirDelta)).Append("\n");
-            sb.Append("<size=64><b>").Append(mine).Append("  -  ").Append(theirs).Append("</b></size>");
+            sb.Append("<size=72><b>").Append(mine).Append("  :  ").Append(theirs).Append("</b></size>");
             _body.text = sb.ToString();
-            _title.color = good ? new Color(0.55f, 0.95f, 0.6f) : new Color(1f, 0.55f, 0.5f);
+            _title.color = good ? UiArt.Good : UiArt.Bad;
+            Transform badge = transform.Find("Panel/Badge");
+            if (badge != null)
+            {
+                var bi = badge.GetComponent<Image>();
+                bi.sprite = UiArt.Get(good ? "icon_check" : "icon_close");
+                bi.color = good ? UiArt.Good : UiArt.Bad;
+            }
             _continue.GetComponentInChildren<TMP_Text>().text = continueLabel;
 
             _clicked = false;
             gameObject.SetActive(true);
+            Transform panel = transform.Find("Panel");
+            if (panel != null) panel.localScale = Vector3.one * 0.8f;
+            if (panel != null) StartCoroutine(Tween.ScaleTo(panel, 0.8f, 1f, 0.35f, Ease.OutBack));
+            AudioManager.Play(Sfx.Whoosh, 0.5f);
             yield return Tween.Fade(_group, 1f, 0.2f);
             for (float t = 0f; !_clicked && (autoDismissSeconds <= 0f || t < autoDismissSeconds); t += Time.deltaTime) yield return null;
             yield return Tween.Fade(_group, 0f, 0.15f);

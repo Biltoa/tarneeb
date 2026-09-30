@@ -7,9 +7,9 @@ from playwright.sync_api import sync_playwright
 url = sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8090/index.html'
 W, H = 540, 960
 out = 'Logs/web/'
-def tap(page, nx, ny):
-    s = min(W / 1080.0, H / 1920.0)
-    x, y = W / 2 + nx * s, H / 2 - ny * s
+def tap(page, ax, ay):   # design coordinates of the 850x1850 frame, origin top-left, y down
+    s = min(W / 850.0, H / 1850.0)
+    x, y = W / 2 + (ax - 425) * s, H / 2 + (ay - 925) * s
     page.mouse.move(x, y); time.sleep(0.12); page.mouse.down(); time.sleep(0.12); page.mouse.up()
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--use-angle=swiftshader", "--use-gl=angle", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"])
@@ -24,16 +24,16 @@ with sync_playwright() as p:
         pages.append(pg)
     time.sleep(3)
     A, B = pages
-    tap(A, 0, -110); time.sleep(1.5); tap(A, 0, 290)          # A: Play Online, Quick match (creates the table)
+    tap(A, 425, 1320); time.sleep(1.5); tap(A, 425, 705)      # A: Play Online, Quick match (creates the table)
     time.sleep(12)
     A.screenshot(path=out + 'online_A_room.png')
-    tap(B, 0, -110); time.sleep(1.5); tap(B, 0, 290)          # B: joins A's table
+    tap(B, 425, 1320); time.sleep(1.5); tap(B, 425, 705)      # B: joins A's table
     time.sleep(12)
     A.screenshot(path=out + 'online_A_two.png'); B.screenshot(path=out + 'online_B_two.png')
-    tap(A, 0, -30)                                             # A: Start game
+    tap(A, 425, 955)                                           # A: Start game
     time.sleep(25)
     A.screenshot(path=out + 'online_A_game.png'); B.screenshot(path=out + 'online_B_game.png')
-    tap(A, 290, -395); time.sleep(1.5); tap(A, 315, -150)     # A: emoji button, cool face
+    tap(A, 763, 1667); time.sleep(1.5); tap(A, 680, 965)      # A: emoji button, cool face
     time.sleep(2.5)
     A.screenshot(path=out + 'online_A_emoji.png'); B.screenshot(path=out + 'online_B_emoji.png')
     for i, l in enumerate(logs):

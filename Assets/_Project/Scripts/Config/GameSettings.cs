@@ -10,6 +10,9 @@ namespace Tarneeb.Config
         private const string DifficultyKey = "tarneeb.difficulty";
         private const string SoundKey = "tarneeb.sound";
         private const string SpeedKey = "tarneeb.speed";
+        private const string MusicKey = "tarneeb.music";
+        private const string MusicVolKey = "tarneeb.musicvol";
+        private const string SfxVolKey = "tarneeb.sfxvol";
 
         /// <summary>Kill switch: set to false to hide online play even when Photon is installed (see Net/README).</summary>
         public const bool OnlineAllowed = true;
@@ -27,6 +30,26 @@ namespace Tarneeb.Config
         {
             get => PlayerPrefs.GetInt(SoundKey, 1) == 1;
             set { PlayerPrefs.SetInt(SoundKey, value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
+        public static bool MusicOn
+        {
+            get => PlayerPrefs.GetInt(MusicKey, 1) == 1;
+            set { PlayerPrefs.SetInt(MusicKey, value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
+        /// <summary>0..1, default 0.6.</summary>
+        public static float MusicVolume
+        {
+            get => PlayerPrefs.GetFloat(MusicVolKey, 0.6f);
+            set { PlayerPrefs.SetFloat(MusicVolKey, Mathf.Clamp01(value)); PlayerPrefs.Save(); }
+        }
+
+        /// <summary>0..1, default 1.</summary>
+        public static float SfxVolume
+        {
+            get => PlayerPrefs.GetFloat(SfxVolKey, 1f);
+            set { PlayerPrefs.SetFloat(SfxVolKey, Mathf.Clamp01(value)); PlayerPrefs.Save(); }
         }
 
         /// <summary>1 = normal, 2 = fast. Scales bot think time and animations.</summary>

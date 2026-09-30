@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Tarneeb.Presentation
 {
-    public enum Ease { Linear, OutCubic, InOutCubic, OutBack }
+    public enum Ease { Linear, OutCubic, InOutCubic, OutBack, OutQuad, InQuad, OutElastic, InBack }
 
     /// <summary>Tiny coroutine tween helper. Replaces DOTween for this prototype (see DEVLOG).</summary>
     public static class Tween
@@ -18,6 +18,15 @@ namespace Tarneeb.Presentation
                 case Ease.OutCubic: { float u = 1f - t; return 1f - u * u * u; }
                 case Ease.InOutCubic: return t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) / 2f;
                 case Ease.OutBack: { const float c1 = 1.70158f, c3 = c1 + 1f; float u = t - 1f; return 1f + c3 * u * u * u + c1 * u * u; }
+                case Ease.OutQuad: return 1f - (1f - t) * (1f - t);
+                case Ease.InQuad: return t * t;
+                case Ease.InBack: { const float c1 = 1.70158f, c3 = c1 + 1f; return c3 * t * t * t - c1 * t * t; }
+                case Ease.OutElastic:
+                {
+                    if (t <= 0f || t >= 1f) return t;
+                    const float c4 = 2f * Mathf.PI / 3f;
+                    return Mathf.Pow(2f, -10f * t) * Mathf.Sin((t * 10f - 0.75f) * c4) + 1f;
+                }
                 default: return t;
             }
         }
@@ -84,6 +93,54 @@ namespace Tarneeb.Presentation
                 yield return null;
             }
             if (group != null) group.alpha = to;
+        }
+
+        /// <summary>Uniform scale tween on any transform.</summary>
+        public static IEnumerator ScaleTo(Transform tr, float from, float to, float duration, Ease ease = Ease.OutCubic)
+        {
+            if (tr == null) yield break;
+            duration = Scaled(duration);
+            tr.localScale = Vector3.one * from;
+            if (duration <= 0f) { tr.localScale = Vector3.one * to; yield break; }
+            for (float t = 0f; t < duration; t += Time.deltaTime)
+            {
+                if (tr == null) yield break;
+                tr.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, Evaluate(ease, t / duration));
+                yield return null;
+            }
+            if (tr != null) tr.localScale = Vector3.one * to;
+        }
+
+        /// <summary>Scale in from zero with a small overshoot (popups, badges).</summary>
+        public static IEnumerator Pop(Transform tr, float duration = 0.32f, float from = 0f) => ScaleTo(tr, from, 1f, duration, Ease.OutBack);
+
+        /// <summary>Quick squash-and-recover (score changes, button presses).</summary>
+        public static IEnumerator Punch(Transform tr, float amount = 0.18f, float duration = 0.28f)
+        {
+            if (tr == null) yield break;
+            duration = Scaled(duration);
+            for (float t = 0f; t < duration; t += Time.deltaTime)
+            {
+                if (tr == null) yield break;
+                float k = t / duration;
+                tr.localScale = Vector3.one * (1f + amount * Mathf.Sin(k * Mathf.PI) * (1f - k * 0.4f));
+                yield return null;
+            }
+            if (tr != null) tr.localScale = Vector3.one;
+        }
+
+        public static IEnumerator FadeGraphic(UnityEngine.UI.Graphic g, float to, float duration)
+        {
+            if (g == null) yield break;
+            Color c = g.color; float a0 = c.a;
+            duration = Scaled(duration);
+            for (float t = 0f; t < duration; t += Time.deltaTime)
+            {
+                if (g == null) yield break;
+                c.a = Mathf.Lerp(a0, to, t / duration); g.color = c;
+                yield return null;
+            }
+            if (g != null) { c.a = to; g.color = c; }
         }
 
         public static IEnumerator Wait(float seconds)

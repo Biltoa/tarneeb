@@ -107,8 +107,9 @@ namespace Tarneeb.Tests.PlayMode
             Assert.IsTrue(GameController.OnlineRequested);
             Assert.IsNotNull(ChatService.Outgoing, "NetChat should own the chat channel online");
             Assert.IsNull(Object.FindFirstObjectByType<BotChatter>(), "no fake bot chatter in an online game");
-            Assert.AreEqual("You", GameObject.Find("Seat_Bottom").transform.Find("NameLabel").GetComponent<TMP_Text>().text);
-            Assert.AreEqual("You", OnlineSession.NamesFor(1)[1]);
+            Assert.AreEqual("AHMAD", GameObject.Find("Seat_Bottom").transform.Find("NameLabel").GetComponent<TMP_Text>().text);
+            Assert.AreEqual("Ahmad", OnlineSession.NamesFor(1)[1]);      // the local seat is always Ahmad at the bottom
+            Assert.AreEqual("Omar", OnlineSession.NamesFor(1)[3]);        // two seats further round is the partner
 
             // Chat goes host -> relay -> back to this peer with seat 0
             int seat = -1; string text = null; int emoji = -1;
@@ -132,7 +133,11 @@ namespace Tarneeb.Tests.PlayMode
             Assert.IsTrue(bid.gameObject.activeSelf || hand.AwaitingInput, "online game never asked the local player to act");
 
             // Leaving the table drops the room
-            GameObject.Find("MenuButton").GetComponent<Button>().onClick.Invoke();
+            GameObject.Find("MenuButton").GetComponent<Button>().onClick.Invoke();          // hamburger opens the pause menu
+            yield return new WaitForSeconds(0.5f);
+            var pause = Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include);
+            Assert.IsTrue(pause.gameObject.activeSelf, "pause menu should open");
+            pause.transform.Find("Panel/Leave").GetComponent<Button>().onClick.Invoke();
             t = 0; while (SceneManager.GetActiveScene().name != "Menu" && t < 10f) { t += Time.deltaTime; yield return null; }
             yield return null;
             Assert.IsFalse(GameController.OnlineRequested, "OnlineRequested should reset when leaving the game");

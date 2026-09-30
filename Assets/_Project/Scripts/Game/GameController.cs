@@ -14,7 +14,8 @@ namespace Tarneeb.Game
     public sealed class GameController : MonoBehaviour
     {
         public const string MenuSceneName = "Menu";
-        public static readonly string[] SeatNames = { "You", "Karim", "Nour", "Salma" };
+        /// <summary>Names by engine seat for a local player in seat 0: the Figma cast (Ahmad at the bottom, Khalid right, Omar across, Sara left).</summary>
+        public static readonly string[] SeatNames = { "Ahmad", "Khalid", "Omar", "Sara" };
 
         /// <summary>Test hook: the local seat is driven by a bot, and popups dismiss themselves.</summary>
         public static bool LocalIsBot;
@@ -40,8 +41,15 @@ namespace Tarneeb.Game
             if (table == null) table = FindFirstObjectByType<TableView>();
             ChatService.Reset();
 
-            Transform menu = table != null ? table.transform.Find("HUD/MenuButton") : null;
-            if (menu != null) menu.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => SceneManager.LoadScene(MenuSceneName));
+            if (table != null)
+            {
+                var pause = table.GetComponentInChildren<PauseMenu>(true);
+                Transform menu = table.transform.Find("HUD/Header/MenuButton");
+                if (menu != null && pause != null) menu.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(pause.Open);
+                Transform settings = table.transform.Find("HUD/Header/SettingsButton");
+                var panel = table.GetComponentInChildren<SettingsPanel>(true);
+                if (settings != null && panel != null) settings.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(panel.Open);
+            }
 
             while (true)
             {
@@ -50,7 +58,7 @@ namespace Tarneeb.Game
                 bool online = OnlineRequested && OnlineMatchFactory != null;
                 if ((choice == GameOverView.Choice.Menu || online) && Application.CanStreamedLevelBeLoaded(MenuSceneName))
                 {
-                    SceneManager.LoadScene(MenuSceneName);
+                    ScreenFader.Go(MenuSceneName);
                     yield break;
                 }
                 if (LocalIsBot) yield break;

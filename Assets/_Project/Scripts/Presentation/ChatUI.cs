@@ -65,8 +65,6 @@ namespace Tarneeb.Presentation
                 t.Find("Label").GetComponent<TMP_Text>().text = phrase;
                 t.GetComponent<Button>().onClick.AddListener(() => SendText(phrase));
             }
-            Transform icon = transform.Find("EmojiButton/Icon");
-            if (icon != null) icon.GetComponent<Image>().sprite = EmojiArt.Get(0);
 
             _emojiPanel.SetActive(false);
             _chatPanel.SetActive(false);
@@ -79,10 +77,11 @@ namespace Tarneeb.Presentation
 
         private void Open(GameObject panel)
         {
-            AudioManager.Play(Sfx.Click);
             _emojiPanel.SetActive(panel == _emojiPanel);
             _chatPanel.SetActive(panel == _chatPanel);
             if (panel == _chatPanel) _unread.SetActive(false);
+            Transform inner = panel.transform.Find("Panel");
+            if (inner != null) StartCoroutine(Tween.ScaleTo(inner, 0.85f, 1f, 0.25f, Ease.OutBack));
         }
 
         public void CloseAll()

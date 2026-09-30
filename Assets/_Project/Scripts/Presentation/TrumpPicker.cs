@@ -23,8 +23,8 @@ namespace Tarneeb.Presentation
                 Button b = UiBind.Get<Button>(transform, "Pick_" + s);
                 b.onClick.AddListener(() => Pick(suit));
                 Image icon = UiBind.Get<Image>(transform, "Pick_" + s + "/Icon");
-                if (CardArt.Instance != null) icon.sprite = CardArt.Instance.SuitSprite(s);
-                icon.color = CardArt.SuitColor(s);
+                icon.sprite = UiArt.SuitIcon(s, false);
+                icon.color = Color.white;
             }
             gameObject.SetActive(false);
         }
@@ -34,6 +34,10 @@ namespace Tarneeb.Presentation
             Bind();
             _onPick = onPick;
             gameObject.SetActive(true);
+            StopAllCoroutines();
+            AudioManager.Play(Sfx.Whoosh, 0.5f);
+            transform.localScale = Vector3.one * 0.7f;
+            StartCoroutine(Tween.ScaleTo(transform, 0.7f, 1f, 0.3f, Ease.OutBack));
         }
 
         public void Hide()

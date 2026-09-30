@@ -15,13 +15,14 @@ namespace Tarneeb.Net
         /// <summary>Set by the lobby once the room is ready and the Game scene is about to load.</summary>
         public static INetTransport Transport;
 
-        private static readonly string[] BaseNames = { "Omar", "Karim", "Nour", "Salma" };
+        private static readonly string[] ViewNames = GameController.SeatNames;      // by view position: bottom, right, top, left
 
-        /// <summary>Same seat names on every screen, except the local seat which always reads "You".</summary>
+        /// <summary>Names by engine seat as seen from the local seat: Ahmad is always you (bottom), then Khalid, Omar, Sara around the table.</summary>
         public static string[] NamesFor(int localSeat)
         {
-            var n = (string[])BaseNames.Clone();
-            if (localSeat >= 0 && localSeat < 4) n[localSeat] = "You";
+            var n = new string[4];
+            int local = localSeat >= 0 && localSeat < 4 ? localSeat : 0;
+            for (int s = 0; s < 4; s++) n[s] = ViewNames[(s - local + 4) & 3];
             return n;
         }
 

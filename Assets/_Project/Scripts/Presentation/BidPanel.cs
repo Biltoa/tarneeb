@@ -40,6 +40,25 @@ namespace Tarneeb.Presentation
             _onPass = onPass;
             for (int n = First; n <= Last; n++) _bidButtons[n - First].interactable = n >= minimumBid;
             gameObject.SetActive(true);
+            StopAllCoroutines();
+            StartCoroutine(Intro());
+        }
+
+        private System.Collections.IEnumerator Intro()
+        {
+            AudioManager.Play(Sfx.Whoosh, 0.5f);
+            transform.localScale = Vector3.one * 0.7f;
+            var group = GetComponent<CanvasGroup>();
+            if (group != null) group.alpha = 0f;
+            for (float t = 0f; t < 0.28f; t += Time.deltaTime)
+            {
+                float k = Tween.Evaluate(Ease.OutBack, t / 0.28f);
+                transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, k);
+                if (group != null) group.alpha = Mathf.Clamp01(t / 0.18f);
+                yield return null;
+            }
+            transform.localScale = Vector3.one;
+            if (group != null) group.alpha = 1f;
         }
 
         public void Hide()
