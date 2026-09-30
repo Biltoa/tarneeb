@@ -19,6 +19,10 @@ namespace Tarneeb.Presentation
             _source = GetComponent<AudioSource>();
             if (_source == null) _source = gameObject.AddComponent<AudioSource>();
             _source.playOnAwake = false;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL decodes lazily ("sound which is not loaded yet"); load the tiny effects up front so the first play is instant.
+            foreach (AudioClip c in new[] { cardFlip, cardPlace, trickWin, roundWin, roundLose, click }) if (c != null) c.LoadAudioData();
+#endif
         }
 
         private void OnDestroy() { if (Instance == this) Instance = null; }

@@ -58,3 +58,11 @@ Append after each work session: what was built, decisions and why, bugs found, A
   - `RemotePlayerController` kept a consumed request and replayed it forever (1.5 million rejected commands in one test run). Fixed and the test now guards it.
   - A remote request can arrive before the match loop has finished animating and called `Begin`; requests are now buffered instead of dropped (otherwise the 15 s timer would hand the seat to a bot).
 - Needs developer review: see the list at the bottom of README.md ("Known limitations").
+
+## Day 3, session 4 (audio preload verification, after a machine restart)
+- Built:
+  - Verified the WebGL audio preload change (`AudioManager` calls `LoadAudioData()` on the six effects in WebGL builds; SFX imports set to `preloadAudioData: 0`).
+  - EditMode 50/50 passed, WebGL build succeeded (11.3 MB, 0 errors, 0 warnings), Playwright smoke test loaded in 1.4 s, ~57 fps, no console or page errors.
+- Bugs found / fixed:
+  - After the MacBook restart `umcpd` was not running, so every NAV call was refused; restarted with `umcpd --profile full` (binary is inside `/Applications/NAV MCP (arm64).app/Contents/Resources/`). The Playwright Python package was also gone; installed into a scratch venv.
+- Needs developer review: the sound itself was not audible-tested (headless); please check the first click/card sound on a real browser.
