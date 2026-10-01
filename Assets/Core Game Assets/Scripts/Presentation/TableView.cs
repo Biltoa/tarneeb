@@ -21,7 +21,7 @@ namespace Tarneeb.Presentation
         private static readonly Color TeamUs = new Color(0.30f, 0.86f, 0.92f);
         private static readonly Color TeamThem = new Color(0.98f, 0.62f, 0.30f);
 
-        private const float TrickCardScale = 0.92f;
+        private static float TrickCardScale => 0.92f * ResponsiveFrame.TrickScale;       // smaller on a short screen, where the table shrinks
 
         [SerializeField] private CardView cardPrefab;
 

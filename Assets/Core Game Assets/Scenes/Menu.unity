@@ -14387,10 +14387,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 2081276041}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a47b6854422e4a18bf109a37d37e915, type: 3}
+  m_Script: {fileID: 11500000, guid: 401c9103abe5e4b07b7b437921b36c8f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Tarneeb.Unity::Tarneeb.Presentation.FitScale
-  designSize: {x: 850, y: 1850}
+  m_EditorClassIdentifier: Tarneeb.Unity::Tarneeb.Presentation.ResponsiveFrame
 --- !u!1 &2081535889
 GameObject:
   m_ObjectHideFlags: 0

@@ -36,6 +36,7 @@ Portrait, mobile-first, four players. Single player against bots, or online with
 - **Chat and emoji**, with speech bubbles at the seats.
 - **Arabic and English**, with proper letter joining and right-to-left layout.
 - **Made for thumbs**: drag a card toward the table (past 25% of the way and it plays, release earlier or pull it back and it returns to your hand), or tap twice. It never plays a card for you, even when only one is legal.
+- **Responsive**: fills the width of any phone, with or without the browser's bars, and sits centred on tablets. On a desktop it appears inside a phone frame. Locked to portrait.
 - Generated sound effects and two music loops, animated deal and tricks, settings, pause menu, game speed.
 
 ## How it is built
@@ -51,7 +52,7 @@ Portrait, mobile-first, four players. Single player against bots, or online with
 | **Fonts** | Cinzel, Noto Serif, Amiri (all SIL OFL) |
 | **AI assistants** | **Claude Sonnet 5.5** (medium effort) in Claude Code wrote the engine, bots, UI code, tests and tooling; **ChatGPT Sol 6.1** (medium effort) alongside it |
 | **Editor automation** | [NAV MCP](https://github.com/Biltoa/nav-mcp-unity), so the AI could drive the Unity Editor directly |
-| **Tests** | NUnit: 75 EditMode, 11 PlayMode (including a whole game played through the real UI), a 10,000-game bot simulation |
+| **Tests** | NUnit: 75 EditMode, 13 PlayMode (a whole game through the real UI, and the layout on 27 phone and tablet screens), a 10,000-game bot simulation |
 
 ## Architecture
 
@@ -100,7 +101,7 @@ Every variant is a `RulesConfig` field; the defaults are classic Tarneeb.
 | Suite | Count | Result |
 |---|---|---|
 | EditMode: deck, deal, determinism, bidding, follow suit, trick winner, scoring, game end, bot behaviour and strength ladder, online host and clients, Arabic shaping | **75** | all pass |
-| PlayMode: a full game with bots, a full game played through the real UI, drag-to-play, chat, online lobby, UI and language flows | **11** | all pass |
+| PlayMode: a full game with bots, a full game played through the real UI, drag-to-play, chat, online lobby, UI and language flows, and the responsive layout on 27 iPhone, Android, foldable and tablet screens (full-screen and with browser bars) | **13** | all pass |
 | Headless simulation | 10,000 bot games | 0 errors, every game terminates, no illegal move |
 
 ```bash
@@ -128,7 +129,7 @@ The published site is the contents of `Build/WebGL`, committed under `docs/` and
 - Host migration is out of scope: if the online master leaves, the match ends with a message.
 - The bots have no partner signalling or opponent modelling and never reach a kaboot.
 - Typed chat is Latin-only; the quick phrases and the interface are fully translated.
-- Portrait only: on desktop it is letterboxed, and on a phone held sideways it asks you to rotate.
+- Portrait only: on desktop it is shown inside a phone frame, and on a phone held sideways it asks you to rotate.
 - The four player portraits are AI-generated and the image service's terms are not a formal licence (see [CREDITS.md](CREDITS.md)).
 
 <div align="center"><sub>© Tazigra</sub></div>

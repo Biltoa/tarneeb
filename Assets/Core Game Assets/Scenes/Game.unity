@@ -886,9 +886,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 73003231}
-  - component: {fileID: 73003234}
   - component: {fileID: 73003233}
   - component: {fileID: 73003232}
+  - component: {fileID: 73003234}
   m_Layer: 0
   m_Name: Content
   m_TagString: Untagged
@@ -965,10 +965,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 73003230}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a47b6854422e4a18bf109a37d37e915, type: 3}
+  m_Script: {fileID: 11500000, guid: 401c9103abe5e4b07b7b437921b36c8f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Tarneeb.Unity::Tarneeb.Presentation.FitScale
-  designSize: {x: 850, y: 1850}
+  m_EditorClassIdentifier: Tarneeb.Unity::Tarneeb.Presentation.ResponsiveFrame
 --- !u!1 &85265894
 GameObject:
   m_ObjectHideFlags: 0
@@ -16512,6 +16511,7 @@ MonoBehaviour:
   width: 800
   liftSelected: 30
   liftHover: 14
+  playThreshold: 0.25
   DropZone: {fileID: 0}
 --- !u!1 &909946847
 GameObject:

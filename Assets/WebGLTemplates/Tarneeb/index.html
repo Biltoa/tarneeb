@@ -14,27 +14,72 @@
     <style>
       :root { --bg: #00181a; --gold: #ffe49a; --gold-deep: #e7bc5d; }
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-      #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: var(--bg); touch-action: none; outline: none; }
-      #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: "Cinzel", Georgia, "Times New Roman", serif; background: radial-gradient(ellipse at 50% 42%, #0b3a33 0%, #012123 55%, var(--bg) 100%); z-index: 5; transition: opacity .4s; }
-      #loading svg { width: 20vmin; height: 20vmin; filter: drop-shadow(0 0 2.4vmin rgba(255,214,120,.55)); animation: bob 2.6s ease-in-out infinite; }
-      #loading h1 { font-size: 11vmin; letter-spacing: .1em; margin: 1vmin 0 5vmin; font-weight: 700; background: linear-gradient(180deg, #fff8d8 0%, var(--gold) 45%, var(--gold-deep) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
-      #bar { width: 56vmin; height: 1.5vmin; background: rgba(255,228,154,.14); border: .25vmin solid rgba(255,228,154,.55); border-radius: 1vmin; overflow: hidden; box-shadow: 0 0 2vmin rgba(255,214,120,.25); }
-      #fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--gold-deep), #fff1b8); transition: width .15s; box-shadow: 0 0 1.4vmin rgba(255,232,150,.9); }
-      #hint { margin-top: 3vmin; color: rgba(255,240,190,.55); font-size: 2.4vmin; letter-spacing: .3em; }
-      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2vmin); } }
+
+      /* Phones and tablets: the game owns the whole visible page (respecting the safe areas of a home-screen app). */
+      #device { position: fixed; inset: 0; }
+      #screen { position: absolute; inset: 0; overflow: hidden; container-type: size; background: var(--bg); }
+      #game { position: absolute; inset: 0; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+      #unity-canvas { display: block; width: 100%; height: 100%; background: var(--bg); touch-action: none; outline: none; }
+      #bar-top, #bar-bottom, #island, .hw { display: none; }
+
+      #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: "Cinzel", Georgia, "Times New Roman", serif; background: radial-gradient(ellipse at 50% 42%, #0b3a33 0%, #012123 55%, var(--bg) 100%); z-index: 5; transition: opacity .4s; }
+      #loading svg { width: 20cqmin; height: 20cqmin; filter: drop-shadow(0 0 2.4cqmin rgba(255,214,120,.55)); animation: bob 2.6s ease-in-out infinite; }
+      #loading h1 { font-size: 11cqmin; letter-spacing: .1em; margin: 1cqmin 0 5cqmin; font-weight: 700; background: linear-gradient(180deg, #fff8d8 0%, var(--gold) 45%, var(--gold-deep) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+      #bar { width: 56cqmin; height: 1.5cqmin; background: rgba(255,228,154,.14); border: .25cqmin solid rgba(255,228,154,.55); border-radius: 1cqmin; overflow: hidden; box-shadow: 0 0 2cqmin rgba(255,214,120,.25); }
+      #fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--gold-deep), #fff1b8); transition: width .15s; box-shadow: 0 0 1.4cqmin rgba(255,232,150,.9); }
+      #hint { margin-top: 3cqmin; color: rgba(255,240,190,.55); font-size: 2.4cqmin; letter-spacing: .3em; }
+      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2cqmin); } }
       #fs { position: fixed; right: 10px; bottom: 10px; z-index: 6; width: 44px; height: 44px; border: 1px solid rgba(255,228,154,.5); border-radius: 12px; background: rgba(0,24,26,.7); color: var(--gold); font-size: 22px; cursor: pointer; display: none; }
+      #studio { display: none; }
       #rotate { position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; background: var(--bg); color: var(--gold); font-family: "Cinzel", Georgia, serif; font-size: 5vmin; letter-spacing: .12em; text-align: center; }
       #rotate svg { width: 18vmin; height: 18vmin; animation: tilt 2.4s ease-in-out infinite; }
       @keyframes tilt { 0%, 30% { transform: rotate(-90deg); } 60%, 100% { transform: rotate(0deg); } }
       /* phones held sideways: the game is portrait only, so ask the player to turn the device */
       @media (orientation: landscape) and (pointer: coarse) and (max-height: 520px) { #rotate { display: flex; } }
+
+      /* Desktop: show the game inside a modern phone, so the portrait game is never stretched across a monitor. */
+      @media (hover: hover) and (pointer: fine) and (min-width: 520px) and (min-height: 480px) {
+        :root { --h: min(92vh, calc((100vw - 48px) / 0.4714)); --bz: calc(var(--h) * 0.011); }
+        body { background: radial-gradient(ellipse at 50% 35%, #0b2f2c 0%, #04171a 60%, #010b0d 100%); }
+        #device { inset: auto; left: 50%; top: calc(50% - 1.2vh); width: calc(var(--h) * 0.4714); height: var(--h); transform: translate(-50%, -50%); box-sizing: border-box; padding: var(--bz); border-radius: calc(var(--h) * 0.066); background: #050506;
+          box-shadow: 0 0 0 calc(var(--h) * 0.0032) #5b5f66, 0 0 0 calc(var(--h) * 0.0055) #1a1b1e, 0 3.5vh 9vh rgba(0,0,0,.65), 0 0 12vh rgba(231,188,93,.08); }
+        #screen { inset: var(--bz); border-radius: calc(var(--h) * 0.055); background: var(--bg); }
+        #bar-top { position: absolute; z-index: 7; left: 0; right: 0; top: 0; height: calc(var(--h) * 0.046); display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--h) * 0.05) 0 calc(var(--h) * 0.055); box-sizing: border-box; color: #f2f2f2; font: 600 calc(var(--h) * 0.0175) -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; background: var(--bg); }
+        #bar-top .ic { display: flex; align-items: center; gap: calc(var(--h) * 0.007); }
+        #bar-top svg { height: calc(var(--h) * 0.0135); width: auto; fill: #f2f2f2; }
+        #game { top: calc(var(--h) * 0.046); bottom: calc(var(--h) * 0.022); padding: 0; }
+        #bar-bottom { display: block; position: absolute; z-index: 7; left: 0; right: 0; bottom: 0; height: calc(var(--h) * 0.022); background: var(--bg); }
+        #bar-bottom::after { content: ""; position: absolute; left: 50%; top: 40%; width: 34%; height: calc(var(--h) * 0.0055); border-radius: 9px; background: rgba(255,255,255,.8); transform: translateX(-50%); }
+        #bar-top, #island { display: flex; }
+        #island { position: absolute; z-index: 8; top: calc(var(--bz) + var(--h) * 0.0115); left: 50%; width: calc(var(--h) * 0.1); height: calc(var(--h) * 0.0295); border-radius: 99px; background: #000; transform: translateX(-50%); }
+        .hw { display: block; position: absolute; width: calc(var(--h) * 0.0045); background: linear-gradient(90deg, #2a2c30, #5b5f66); border-radius: 3px; }
+        .hw.l1 { left: calc(var(--h) * -0.0075); top: 17%; height: 4.5%; }
+        .hw.l2 { left: calc(var(--h) * -0.0075); top: 25%; height: 8%; }
+        .hw.l3 { left: calc(var(--h) * -0.0075); top: 35%; height: 8%; }
+        .hw.r1 { right: calc(var(--h) * -0.0075); top: 28%; height: 13%; background: linear-gradient(270deg, #2a2c30, #5b5f66); }
+        #fs { display: none !important; }
+        #studio { display: block; position: fixed; left: 0; right: 0; bottom: 1.1vh; text-align: center; color: rgba(255,228,154,.38); font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .32em; }
+      }
     </style>
   </head>
   <body>
-    <canvas id="unity-canvas" tabindex="-1"></canvas>
-    <div id="loading">
-      <svg viewBox="0 0 256 256" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8d8"/><stop offset=".5" stop-color="#ffe49a"/><stop offset="1" stop-color="#e7bc5d"/></linearGradient></defs><g fill="url(#g)"><polygon points="28,196 18,78 82,128 128,44 174,128 238,78 228,196"/><circle cx="18" cy="78" r="17"/><circle cx="128" cy="44" r="17"/><circle cx="238" cy="78" r="17"/><rect x="28" y="178" width="200" height="36" rx="10"/></g></svg>
-      <h1>TARNEEB</h1><div id="bar"><div id="fill"></div></div><div id="hint">LOADING</div></div>
+    <div id="device">
+      <div id="screen">
+        <div id="bar-top"><span id="clock">9:41</span><span class="ic">
+          <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg viewBox="0 0 17 12" aria-hidden="true"><path d="M8.5 2.3c2.3 0 4.4.9 6 2.4l1-1.1C13.6 1.8 11.2.8 8.5.8S3.4 1.8 1.5 3.6l1 1.1c1.6-1.5 3.7-2.4 6-2.4zm0 3.4c1.4 0 2.7.5 3.7 1.4l1-1.1C11.9 4.9 10.3 4.2 8.5 4.2S5.100 4.900 3.800 6l1 1.100c1-.9 2.300-1.400 3.700-1.400zm0 3.300c.7 0 1.300.3 1.800.7L8.500 11.500 6.700 9.700c.5-.4 1.100-.7 1.800-.7z"/></svg>
+          <svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.2" fill="none" stroke="#f2f2f2" opacity=".5"/><rect x="2" y="2" width="19" height="8" rx="2"/><rect x="23.800" y="4" width="2" height="4" rx="1" opacity=".5"/></svg>
+        </span></div>
+        <div id="game"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
+        <div id="bar-bottom"></div>
+        <div id="loading">
+          <svg viewBox="0 0 256 256" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8d8"/><stop offset=".5" stop-color="#ffe49a"/><stop offset="1" stop-color="#e7bc5d"/></linearGradient></defs><g fill="url(#g)"><polygon points="28,196 18,78 82,128 128,44 174,128 238,78 228,196"/><circle cx="18" cy="78" r="17"/><circle cx="128" cy="44" r="17"/><circle cx="238" cy="78" r="17"/><rect x="28" y="178" width="200" height="36" rx="10"/></g></svg>
+          <h1>TARNEEB</h1><div id="bar"><div id="fill"></div></div><div id="hint">LOADING</div></div>
+      </div>
+      <div id="island"></div>
+      <i class="hw l1"></i><i class="hw l2"></i><i class="hw l3"></i><i class="hw r1"></i>
+    </div>
+    <div id="studio">TAZIGRA</div>
     <div id="rotate"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="18" y="6" width="28" height="52" rx="6"/><line x1="28" y1="51" x2="36" y2="51"/></svg><div>PLEASE ROTATE YOUR DEVICE</div></div>
     <button id="fs" title="Fullscreen" aria-label="Fullscreen">&#x26F6;</button>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>
@@ -43,6 +88,9 @@
       var fill = document.getElementById("fill");
       var loading = document.getElementById("loading");
       var fsButton = document.getElementById("fs");
+      var clock = document.getElementById("clock");
+      function tick() { var d = new Date(); clock.textContent = d.getHours() + ":" + ("0" + d.getMinutes()).slice(-2); }
+      tick(); setInterval(tick, 20000);
       // portrait only: browsers allow the lock inside fullscreen / an installed app, so try on the first touch and ignore a refusal
       function lockPortrait() { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock("portrait-primary").catch(function () {}); } catch (e) {} }
       document.addEventListener("pointerdown", lockPortrait, { once: true });

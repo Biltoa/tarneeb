@@ -36,8 +36,8 @@ namespace Tarneeb.Presentation
             gameObject.SetActive(true);
             StopAllCoroutines();
             AudioManager.Play(Sfx.Whoosh, 0.5f);
-            transform.localScale = Vector3.one * 0.7f;
-            StartCoroutine(Tween.ScaleTo(transform, 0.7f, 1f, 0.3f, Ease.OutBack));
+            transform.localScale = Vector3.one * (0.7f * ResponsiveFrame.PanelScale);
+            StartCoroutine(Tween.ScaleTo(transform, 0.7f * ResponsiveFrame.PanelScale, ResponsiveFrame.PanelScale, 0.3f, Ease.OutBack));
         }
 
         public void Hide()

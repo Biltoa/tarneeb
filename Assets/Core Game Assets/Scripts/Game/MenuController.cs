@@ -79,6 +79,15 @@ namespace Tarneeb.Game
             });
         }
 
+        private void OnEnable() => ResponsiveFrame.Applied += OnLayout;
+        private void OnDisable() => ResponsiveFrame.Applied -= OnLayout;
+
+        /// <summary>The responsive layout moved the menu's elements: the card fan floats around its new home.</summary>
+        private void OnLayout()
+        {
+            if (_cards != null) _cardsHome = _cards.anchoredPosition;
+        }
+
         private IEnumerator Start()
         {
             LanguagePrompt prompt = transform.parent != null ? transform.parent.Find("LanguagePanel")?.GetComponent<LanguagePrompt>() : null;

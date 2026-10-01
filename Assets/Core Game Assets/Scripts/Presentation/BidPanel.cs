@@ -47,17 +47,17 @@ namespace Tarneeb.Presentation
         private System.Collections.IEnumerator Intro()
         {
             AudioManager.Play(Sfx.Whoosh, 0.5f);
-            transform.localScale = Vector3.one * 0.7f;
+            transform.localScale = Vector3.one * (0.7f * ResponsiveFrame.PanelScale);
             var group = GetComponent<CanvasGroup>();
             if (group != null) group.alpha = 0f;
             for (float t = 0f; t < 0.28f; t += Time.deltaTime)
             {
                 float k = Tween.Evaluate(Ease.OutBack, t / 0.28f);
-                transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, k);
+                transform.localScale = Vector3.one * (Mathf.LerpUnclamped(0.7f, 1f, k) * ResponsiveFrame.PanelScale);
                 if (group != null) group.alpha = Mathf.Clamp01(t / 0.18f);
                 yield return null;
             }
-            transform.localScale = Vector3.one;
+            transform.localScale = Vector3.one * ResponsiveFrame.PanelScale;
             if (group != null) group.alpha = 1f;
         }
 
