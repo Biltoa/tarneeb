@@ -7,6 +7,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#00181a">
+    <meta name="author" content="{{{ COMPANY_NAME }}}">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>{{{ PRODUCT_NAME }}}</title>
     <style>
       :root { --bg: #00181a; --gold: #ffe49a; --gold-deep: #e7bc5d; }
@@ -20,6 +23,11 @@
       #hint { margin-top: 3vmin; color: rgba(255,240,190,.55); font-size: 2.4vmin; letter-spacing: .3em; }
       @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2vmin); } }
       #fs { position: fixed; right: 10px; bottom: 10px; z-index: 6; width: 44px; height: 44px; border: 1px solid rgba(255,228,154,.5); border-radius: 12px; background: rgba(0,24,26,.7); color: var(--gold); font-size: 22px; cursor: pointer; display: none; }
+      #rotate { position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; background: var(--bg); color: var(--gold); font-family: "Cinzel", Georgia, serif; font-size: 5vmin; letter-spacing: .12em; text-align: center; }
+      #rotate svg { width: 18vmin; height: 18vmin; animation: tilt 2.4s ease-in-out infinite; }
+      @keyframes tilt { 0%, 30% { transform: rotate(-90deg); } 60%, 100% { transform: rotate(0deg); } }
+      /* phones held sideways: the game is portrait only, so ask the player to turn the device */
+      @media (orientation: landscape) and (pointer: coarse) and (max-height: 520px) { #rotate { display: flex; } }
     </style>
   </head>
   <body>
@@ -27,6 +35,7 @@
     <div id="loading">
       <svg viewBox="0 0 256 256" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8d8"/><stop offset=".5" stop-color="#ffe49a"/><stop offset="1" stop-color="#e7bc5d"/></linearGradient></defs><g fill="url(#g)"><polygon points="28,196 18,78 82,128 128,44 174,128 238,78 228,196"/><circle cx="18" cy="78" r="17"/><circle cx="128" cy="44" r="17"/><circle cx="238" cy="78" r="17"/><rect x="28" y="178" width="200" height="36" rx="10"/></g></svg>
       <h1>TARNEEB</h1><div id="bar"><div id="fill"></div></div><div id="hint">LOADING</div></div>
+    <div id="rotate"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="18" y="6" width="28" height="52" rx="6"/><line x1="28" y1="51" x2="36" y2="51"/></svg><div>PLEASE ROTATE YOUR DEVICE</div></div>
     <button id="fs" title="Fullscreen" aria-label="Fullscreen">&#x26F6;</button>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>
     <script>
@@ -34,6 +43,10 @@
       var fill = document.getElementById("fill");
       var loading = document.getElementById("loading");
       var fsButton = document.getElementById("fs");
+      // portrait only: browsers allow the lock inside fullscreen / an installed app, so try on the first touch and ignore a refusal
+      function lockPortrait() { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock("portrait-primary").catch(function () {}); } catch (e) {} }
+      document.addEventListener("pointerdown", lockPortrait, { once: true });
+      document.addEventListener("fullscreenchange", lockPortrait);
       createUnityInstance(canvas, {
         arguments: [],
         dataUrl: "Build/{{{ DATA_FILENAME }}}",

@@ -169,3 +169,14 @@ Findings from using NAV MCP to build a complete game. See section 3A of the plan
 4. **Persist what you change.** `build.scenes` (and other settings writers) should call `AssetDatabase.SaveAssets()`; and fail fast (not after the 180 s hold) when the Editor process is gone.
 5. **Missing operations that every project needs:** Player Settings (WebGL compression/template/stripping/orientation), texture/sprite import, run tests + read results, build a player (as a detached process), screenshot / Game view capture, import TMP essentials.
 6. **Friendlier surface:** `atomic` batches by default; type-name disambiguation (prefer `Component` types) and C# enum identifiers in `component.set`; a target resolution for `ui.layoutReport`; `umcpd link/connect/profile` verbs and a persisted profile so the app is optional for headless use.
+
+### [2026-09-30] Reopened Editor: health "ok" but a chained shell command hung
+- Type: UX
+- What I tried: `Tools/open_editor.sh && build_scenes.py && run_tests.sh` in one command after the Editor had been killed by a test run.
+- What happened: the chain sat past the 120 s tool limit although `unity_projects` already reported connected/idle; running `build_scenes.py` on its own afterwards worked at once.
+- Workaround used: check `unity_projects` first, run the steps separately.
+- Suggested fix for NAV MCP: a `wait-for-idle` verb (or an `unity_projects` field) that says when the first domain reload after launch is finished, so scripts need no fixed sleeps.
+- Severity: Minor
+### [2026-09-30] unity_script reimport of all audio clips worked well
+- Type: Works well
+- What I tried: `AssetDatabase.ImportAsset(..., ForceUpdate)` over `t:AudioClip` after changing the import postprocessor; 23 clips in 3.6 s.

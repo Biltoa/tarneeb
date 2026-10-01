@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Composes the card back from the Figma design layers (red gradient, cream edge, inner gold border, lattice vector) into one
-sprite at 6x design size: Assets/_Project/Resources/Cards/card_back.png.."""
+sprite at 6x design size: Assets/Core Game Assets/Resources/Cards/card_back.png.."""
 import os
 from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-OUT = os.path.join(ROOT, 'Assets', '_Project', 'Resources', 'Cards', 'card_back.png')
+OUT = os.path.join(ROOT, 'Assets', 'Core Game Assets', 'Resources', 'Cards', 'card_back.png')
 K = 6; SS = 3
 W, H = 62 * K, 94 * K
 def lerp(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Builds clean circular player portraits: Resources/UI/portrait_<name>.png (288 px).
 The Figma export has neighbouring design layers burnt into the portrait art (Sara: the turn-timer bezel, Ahmad: a piece of the
-VIP crown), so those two are retouched with inpainting. Omar and Khalid are used as exported. Needs opencv-python-headless."""
+VIP crown), so those two are retouched with inpainting. Omar and Khalid are AI-generated (Tools/design/portraits/*.jpg, made with the free
+Pollinations image service, FLUX model; prompts in DEVLOG.md): modern clothes, no headscarf. They are cropped square and masked to a circle
+(the service's corner watermark falls outside the crop). Needs opencv-python-headless."""
 import os
 import numpy as np
 import cv2
 from PIL import Image
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(ROOT, 'Assets', 'FigmaImports', 'Tarneeb VIP _ Unity Gameplay UI')
-OUT = os.path.join(ROOT, 'Assets', '_Project', 'Resources', 'UI')
-SOURCES = {'omar': '23_806', 'sara': '23_817', 'khalid': '23_828', 'ahmad': '23_839'}
+OUT = os.path.join(ROOT, 'Assets', 'Core Game Assets', 'Resources', 'UI')
+SOURCES = {}                                         # all four are AI-generated now (same style); the Figma retouching path is kept for reference
+GENERATED = ['ahmad', 'omar', 'khalid', 'sara']
 
 def ellipse_mask(shape, cx, cy, rx, ry):
     m = np.zeros(shape[:2], np.uint8)
@@ -39,3 +42,14 @@ for name, node in SOURCES.items():
     out = np.dstack([cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB), rgba[:, :, 3]])
     Image.fromarray(out, 'RGBA').save(os.path.join(OUT, 'portrait_%s.png' % name), optimize=True)
     print('wrote portrait', name)
+
+from PIL import ImageDraw
+for name in GENERATED:
+    im = Image.open(os.path.join(ROOT, 'Tools', 'design', 'portraits', name + '.jpg')).convert('RGB')
+    w, h = im.size
+    box = (int(w * 0.08), int(h * 0.03), int(w * 0.08) + int(w * 0.82), int(h * 0.03) + int(w * 0.82))
+    im = im.crop(box).resize((288, 288), Image.LANCZOS).convert('RGBA')
+    m = Image.new('L', (288 * 4, 288 * 4), 0); ImageDraw.Draw(m).ellipse([0, 0, 288 * 4 - 1, 288 * 4 - 1], fill=255)
+    im.putalpha(m.resize((288, 288), Image.LANCZOS))
+    im.save(os.path.join(OUT, 'portrait_%s.png' % name), optimize=True)
+    print('wrote generated portrait', name)

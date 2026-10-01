@@ -9,7 +9,7 @@
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
 /Assets/Plugins/Editor/JetBrains*
-# PUN 2 is a 39 MB third-party Asset Store package (import it yourself, see Net/README.md); its App ID lives in PhotonServerSettings.asset; keep it out of the public repo (see Assets/_Project/Scripts/Net/README.md)
+# PUN 2 is a 39 MB third-party Asset Store package (import it yourself, see Net/README.md); its App ID lives in PhotonServerSettings.asset; keep it out of the public repo (see Assets/Core Game Assets/Scripts/Net/README.md)
 /Assets/Photon/
 /Assets/Photon.meta
 
@@ -51,15 +51,3 @@ crashlytics-build.properties
 /Packages/manifest.json.umcp-backup
 Tools/.navsession
 
-# Third-party Figma importer (Asset Store, not redistributable) and its per-machine config; scenes are generated once and committed
-/Assets/FigmaToUnity/
-/Assets/FigmaToUnity.meta
-/ProjectSettings/FigmaToUnityConfig.json
-/Assets/_Project/Editor/FigmaBundleImport.cs
-/Assets/_Project/Editor/FigmaBundleImport.cs.meta
-# scratch scene used to inspect the raw import
-/Assets/_Project/Scenes/FigmaPreview.unity
-/Assets/_Project/Scenes/FigmaPreview.unity.meta
-# Figma import folders the game does not use (raw portrait crops with design layers burnt in, the design's own royal artwork)
-/Assets/FigmaImports/Full Deck _ 52 Cards*
-/Assets/FigmaImports/Gameplay _ Unity asset components*

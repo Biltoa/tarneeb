@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Synthesizes all game audio (original, CC0): a full SFX set and two music loops (menu + table) in the Hijaz maqam on D, played by
-a Karplus-Strong 'oud', a soft pad, a frame-drum groove and bell accents. No samples, no third-party material.
-Output: Assets/_Project/Audio/Sfx/*.wav and Assets/_Project/Audio/Music/*.ogg. (needs numpy, scipy, soundfile)
+"""Synthesizes all game audio (original, CC0): a full SFX set and two music loops (menu + table) in maqam Hijaz on D. The music is an
+oud (double-course Karplus-Strong strings with a plectrum click, wooden-body resonances, tremolo picking and grace notes) over darbuka
+(doum / tak / ka) and riq, in the classic maqsum rhythm. No samples, no third-party material.
+Output: Assets/Core Game Assets/Audio/Sfx/*.wav and Assets/Core Game Assets/Audio/Music/*.ogg. (needs numpy, scipy, soundfile)
 Usage: python3 Tools/gen_audio.py [sfx|music|all]   (needs numpy + scipy)"""
 import os, sys, wave
 import numpy as np
 from scipy import signal
 
 SR = 44100
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Assets', '_Project', 'Audio')
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Assets', 'Core Game Assets', 'Audio')
 rng = np.random.default_rng(20260930)
 
 # ------------------------------------------------------------------ helpers
@@ -73,7 +74,7 @@ def pad_tone(freq, dur, detune=0.003):
 # ------------------------------------------------------------------ SFX
 def sfx():
     S = os.path.join(ROOT, 'Sfx'); out = {}
-    out['click'] = fade(mixn(sine(1400, 0.05) * env_ad(int(SR * .05), .001, .018), sine(2100, 0.05) * env_ad(int(SR * .05), .001, .012) * .35) * .6)
+    out['ui_click'] = pad(fade(mixn(sine(1400, 0.05) * env_ad(int(SR * .05), .001, .018), sine(2100, 0.05) * env_ad(int(SR * .05), .001, .012) * .35) * .6), int(SR * .12))   # padded: a 0.05 s clip made FMOD fail to create the sound
     out['toggle_on'] = fade(mixn(sine(900, .09) * env_ad(int(SR * .09), .002, .03), np.concatenate([np.zeros(int(.04 * SR)), sine(1350, .09) * env_ad(int(SR * .09), .002, .04)])) * .5)
     out['toggle_off'] = fade(mixn(sine(1200, .09) * env_ad(int(SR * .09), .002, .03), np.concatenate([np.zeros(int(.04 * SR)), sine(780, .1) * env_ad(int(SR * .1), .002, .04)])) * .5)
     n = int(SR * .12); fl = bp(noise(.12), 1800, 7000) * env_ad(n, .002, .05)
@@ -119,47 +120,72 @@ def sfx():
     for name, x in out.items(): write(os.path.join(S, name + '.wav'), norm(x, 0.8))
     print('sfx:', len(out), 'files')
 
-# ------------------------------------------------------------------ music
+# ------------------------------------------------------------------ music (oud + darbuka + riq, maqam Hijaz on D)
 HIJAZ = [0, 1, 4, 5, 7, 8, 10]                                   # D Eb F# G A Bb C
 def hz(step, octave=0, root=62):
-    """step counts scale degrees (0 = D), negative allowed; returns Hz."""
+    """step counts scale degrees (0 = D, 1 = Eb, 2 = F#, 3 = G, 4 = A, 5 = Bb, 6 = C, 7 = D'); negative allowed; returns Hz."""
     o, d = divmod(step, 7); midi = root + HIJAZ[d] + 12 * (o + octave)
     return 440.0 * 2 ** ((midi - 69) / 12.0)
-def dum(vol=1.0):     # deep frame-drum hit
-    n = int(SR * .35); t = np.arange(n) / SR; f = 95 + 60 * np.exp(-t * 30)
-    return (np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 11) + lp(noise(.35), 500) * np.exp(-t * 35) * .4) * vol
-def tak(vol=1.0):     # bright rim hit
+
+def _peak(x, f0, q, gain):
+    b, a = signal.iirpeak(f0 / (SR / 2), q)
+    return signal.lfilter(b, a, x) * gain
+def oud_body(x):
+    """Wooden bowl: air resonance, two body formants, and a warm roll-off (no metallic top end)."""
+    y = x + _peak(x, 190, 5, 1.6) + _peak(x, 430, 4, 1.1) + _peak(x, 1250, 3, 0.7)
+    return lp(y, 4200, 2)
+def oud_note(freq, dur, vel=1.0):
+    """Double-course string: two slightly detuned, slightly offset Karplus-Strong strings + a plectrum click."""
+    c1 = pluck(freq * 2 ** (3 / 1200), dur, .5 + .25 * vel, .9968, .13)
+    c2 = pluck(freq * 2 ** (-4 / 1200), dur, .5 + .25 * vel, .9968, .16)
+    c2 = np.concatenate([np.zeros(int(.004 * SR)), c2])[:len(c1)]
+    x = c1 + .9 * c2
+    n = int(.014 * SR); x[:n] += bp(noise(.014), 1600, 5200) * np.exp(-np.arange(n) / SR * 240) * .9 * vel
+    return x * vel
+def riq(vol=1.0):     # tambourine-like jingles
+    n = int(SR * .09); t = np.arange(n) / SR; x = hp(noise(.09), 5500) * np.exp(-t * 60) * .6
+    for f in (4300, 6100, 7800): x += np.sin(2 * np.pi * f * t) * np.exp(-t * 70) * .12
+    return x * vol
+def dum(vol=1.0):     # deep darbuka doum
+    n = int(SR * .35); t = np.arange(n) / SR; f = 110 + 70 * np.exp(-t * 32)
+    return (np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 10) + lp(noise(.35), 600) * np.exp(-t * 40) * .35) * vol
+def tak(vol=1.0):     # bright rim tak
     n = int(SR * .12); t = np.arange(n) / SR
-    return (bp(noise(.12), 2200, 6500) * np.exp(-t * 55) + np.sin(2 * np.pi * 480 * t) * np.exp(-t * 60) * .2) * vol
+    return (bp(noise(.12), 2400, 7000) * np.exp(-t * 50) + np.sin(2 * np.pi * 520 * t) * np.exp(-t * 55) * .25) * vol
 def ka(vol=1.0):
     n = int(SR * .08); t = np.arange(n) / SR
-    return bp(noise(.08), 3000, 8000) * np.exp(-t * 80) * vol
+    return bp(noise(.08), 3000, 8000) * np.exp(-t * 75) * vol
 
-def render_track(bpm, bars, melody, bass_pattern, groove, oud_gain, pad_chords, name, tail=2.5, chime_at=()):
+def render_track(bpm, bars, melody, bass_pattern, groove, oud_gain, name, tail=2.0, riq_on=False):
+    """melody: (beat, step, beats, kind[, octave]) with kind n = plain, g = grace note from the upper neighbour, t = tremolo picking."""
     beat = 60.0 / bpm; total = bars * 4 * beat
     L = np.zeros(int((total + tail) * SR)); R = np.zeros_like(L)
-    def add(x, at, gain=1.0, pan=0.0):
-        place(L, x, at, gain * (1 - max(0, pan))); place(R, x, at, gain * (1 + min(0, pan)))
-    # pad: sustained fifth-drones changing every 4 bars
-    per = 4 * 4 * beat
-    for i, chord in enumerate(pad_chords * (bars // 4 // len(pad_chords) + 1)):
-        if i * per >= total: break
-        for f in chord: add(pad_tone(f, per + 3.0), i * per - 0.4 if i else 0, 0.10, 0.0)
-    # bass (oud low octave) and groove
+    Lo = np.zeros_like(L); Ro = np.zeros_like(L)                 # oud bus (goes through the body filter)
+    def add(bus_l, bus_r, x, at, gain=1.0, pan=0.0):
+        place(bus_l, x, at, gain * (1 - max(0, pan))); place(bus_r, x, at, gain * (1 + min(0, pan)))
     for bar in range(bars):
         for at, step, dur in bass_pattern[bar % len(bass_pattern)]:
-            add(pluck(hz(step, -1), dur * beat + 0.6, .35, .997), (bar * 4 + at) * beat, .55 * oud_gain, -0.1)
+            add(Lo, Ro, oud_note(hz(step, -1), dur * beat + .5, .8), (bar * 4 + at) * beat, .6 * oud_gain, -.1)
         for at, kind, vol in groove[bar % len(groove)]:
-            fn = {'D': dum, 'T': tak, 'K': ka}[kind]; add(fn(1.0), (bar * 4 + at) * beat + rng.uniform(0, .004), .5 * vol, 0.15 if kind != 'D' else 0)
-    # melody phrases
-    for at, step, dur, oct_ in melody:
-        add(pluck(hz(step, oct_), dur * beat + 1.2, .55, .9975), at * beat, .9 * oud_gain, 0.08)
-    for at, f in chime_at: add(bell(f, 2.2, .35, (1.0, 2.0, 3.0)), at * beat, .6, -.2)
-    mono = (L + R) * .5
-    wl = reverb(L, 2.2, .28); wr = reverb(R, 2.6, .28)
+            fn = {'D': dum, 'T': tak, 'K': ka, 'R': riq}[kind]
+            add(L, R, fn(1.0), (bar * 4 + at) * beat + rng.uniform(0, .003), .5 * vol, .15 if kind != 'D' else 0)
+    for ev in melody:
+        at, step, dur, kind = ev[:4]; octv = ev[4] if len(ev) > 4 else 0
+        f = hz(step, octv); t0 = at * beat
+        if kind == 't':                                              # tremolo picking: fast repeated strokes, fading
+            rate = 11.0; k = 0
+            while k / rate < dur * beat:
+                v = (1.0 if k == 0 else .62) * (1 - .35 * (k / rate) / max(.1, dur * beat))
+                add(Lo, Ro, oud_note(f, .32, v), t0 + k / rate + rng.uniform(0, .006), .85 * oud_gain, .08); k += 1
+        else:
+            if kind == 'g':
+                add(Lo, Ro, oud_note(hz(step + 1, octv), .16, .7), t0 - .07, .7 * oud_gain, .08)
+            add(Lo, Ro, oud_note(f, dur * beat + 1.0, 1.0), t0, .95 * oud_gain, .08)
+    Lb = oud_body(Lo); Rb = oud_body(Ro)
+    L += Lb; R += Rb
+    wl = reverb(L, 1.8, .22); wr = reverb(R, 2.1, .22)
     n = int(total * SR)
-    # fold the reverb tail back onto the start so the loop is seamless
-    def fold(x):
+    def fold(x):                                                      # fold the reverb tail back onto the start so the loop is seamless
         head = x[:n].copy(); tailp = x[n:n + int(tail * SR)]; head[:len(tailp)] += tailp; return head
     l, r = fold(wl), fold(wr)
     peak = max(np.max(np.abs(l)), np.max(np.abs(r)))
@@ -170,44 +196,40 @@ def render_track(bpm, bars, melody, bass_pattern, groove, oud_gain, pad_chords, 
     print('music:', name, '%.1fs' % (n / SR))
 
 def music():
-    # ---------------- menu: 66 bpm, spacious, 16 bars
-    m = []; a = 0.0
-    phr = [  # (beat offset, scale step, beats, octave)
-        (0, 4, 1.5, 0), (1.5, 3, .5, 0), (2, 2, 1, 0), (3, 1, 1, 0),
-        (4, 0, 2, 0), (6, 1, 1, 0), (7, 3, 1, 0),
-        (8, 4, 1, 0), (9, 5, 1, 0), (10, 6, 1.5, 0), (11.5, 5, .5, 0), (12, 4, 2, 0), (14, 3, 2, 0),
-        (16, 2, 1, 0), (17, 1, 1, 0), (18, 0, 2, 0), (20, 1, 1.5, 0), (21.5, 2, .5, 0), (22, 3, 2, 0),
-    ]
-    for base in (0, 32):
-        for at, st, dur, o in phr: m.append((base + at, st, dur, o))
-    for at, st, dur, o in ((64 + 0, 7, 2, 0), (64 + 2, 6, 1, 0), (64 + 3, 5, 1, 0), (64 + 4, 4, 2, 0), (64 + 6, 3, 2, 0)): m.append((at, st, dur, o))
+    # ---------------- menu: 60 bpm, a spacious taqsim-like improvisation, 16 bars
+    S1 = [(0, 4, 2, 't'), (2, 3, .5, 'n'), (2.5, 2, .5, 'n'), (3, 3, 1, 'g'),
+          (4, 4, 1, 'n'), (5, 5, .5, 'n'), (5.5, 4, .5, 'n'), (6, 3, 1, 'n'), (7, 2, 1, 'n'),
+          (8, 1, 1.5, 'g'), (9.5, 0, 2.5, 't'),
+          (12.5, 0, .5, 'n'), (13, 1, .5, 'n'), (13.5, 2, .5, 'n'), (14, 3, 1, 'n'), (15, 4, 1, 'g'),
+          (16, 7, 2, 't'), (18, 6, .5, 'n'), (18.5, 5, .5, 'n'), (19, 4, 1, 'n'),
+          (20, 5, 1, 'n'), (21, 4, .5, 'n'), (21.5, 3, .5, 'n'), (22, 2, 1.5, 'g'), (23.5, 3, .5, 'n'),
+          (24, 4, 1, 'n'), (25, 3, 1, 'n'), (26, 2, .5, 'n'), (26.5, 1, .5, 'n'), (27, 0, 2, 'g'), (29.5, 0, 2.5, 't')]
+    S2 = [(0, 4, 1, 'n'), (1, 5, 1, 'g'), (2, 4, .5, 'n'), (2.5, 3, .5, 'n'), (3, 2, 1, 'n'),
+          (4, 3, 1.5, 'g'), (5.5, 2, .5, 'n'), (6, 1, 1, 'n'), (7, 2, 1, 'n'),
+          (8, 4, 2, 't'), (10.5, 3, .5, 'n'), (11, 2, .5, 'n'), (11.5, 3, .5, 'n'),
+          (12, 4, 1, 'n'), (13, 6, 1, 'n'), (14, 5, .5, 'n'), (14.5, 4, .5, 'n'), (15, 3, 1, 'g'),
+          (16, 2, 1, 'n'), (17, 3, .5, 'n'), (17.5, 2, .5, 'n'), (18, 1, 1.5, 'g'), (19.5, 0, .5, 'n'),
+          (20, 0, 3, 't'), (24, -1, 1, 'n'), (25, 0, .5, 'n'), (25.5, 1, .5, 'n'), (26, 2, 1, 'n'), (27, 1, 1, 'g'), (28, 0, 4, 't')]
+    m = [(a, s, d, k) for a, s, d, k in S1] + [(32 + a, s, d, k) for a, s, d, k in S2]
     bass = [[(0, 0, 3.5)], [(0, 4, 3.5)], [(0, 3, 3.5)], [(0, 0, 3.5)]]
-    groove = [[(0, 'D', .9)], [(0, 'D', .8)], [(0, 'D', .9), (2, 'T', .35)], [(0, 'D', .8)]]
-    chords = [[73.42, 110.0], [98.0, 146.83], [77.78, 116.54], [73.42, 110.0]]
-    render_track(66, 16, m, bass, groove, 0.85, chords, 'menu_theme', chime_at=[(0, 1174.7), (32, 1568.0), (48, 1174.7)])
-    # ---------------- table: 92 bpm, maqsum groove, 24 bars
+    wahda = [(0, 'D', .8), (2, 'T', .3)]
+    groove = [wahda, [(0, 'D', .7)], wahda, [(0, 'D', .7), (3, 'K', .25)]]
+    render_track(60, 16, m, bass, groove, 0.9, 'menu_theme')
+    # ---------------- table: 96 bpm, maqsum (Dum Tak . Tak Dum . Tak .), riq on the off-beats, 24 bars
+    X = [(0, 4, .75, 'n'), (.75, 3, .25, 'n'), (1, 2, .5, 'n'), (1.5, 3, .5, 'n'), (2, 4, 1, 'g'), (3, 5, .5, 'n'), (3.5, 4, .5, 'n'),
+         (4, 3, .5, 'n'), (4.5, 2, .5, 'n'), (5, 1, 1, 'g'), (6, 0, 1.5, 't'), (7.5, 1, .5, 'n')]
+    Y = [(0, 7, 1, 'n'), (1, 6, .5, 'n'), (1.5, 5, .5, 'n'), (2, 4, 1, 'g'), (3, 3, .5, 'n'), (3.5, 2, .5, 'n'),
+         (4, 3, .5, 'n'), (4.5, 4, .5, 'n'), (5, 3, .5, 'n'), (5.5, 2, .5, 'n'), (6, 1, .5, 'n'), (6.5, 2, .5, 'n'), (7, 0, 1, 't')]
+    Z = [(0, 4, .5, 'n'), (.5, 5, .5, 'n'), (1, 6, .5, 'n'), (1.5, 5, .5, 'n'), (2, 4, 1, 'g'), (3, 3, 1, 'n'),
+         (4, 2, .5, 'n'), (4.5, 3, .5, 'n'), (5, 2, .5, 'n'), (5.5, 1, .5, 'n'), (6, 0, 2, 'g')]
     mel = []
-    A = [(0, 4, .5, 0), (.5, 5, .5, 0), (1, 4, .5, 0), (1.5, 3, .5, 0), (2, 2, 1, 0), (3, 1, 1, 0),
-         (4, 0, 1.5, 0), (5.5, 1, .5, 0), (6, 2, 1, 0), (7, 3, 1, 0),
-         (8, 4, .5, 0), (8.5, 3, .5, 0), (9, 4, .5, 0), (9.5, 5, .5, 0), (10, 6, 1, 0), (11, 5, 1, 0),
-         (12, 4, 1, 0), (13, 3, 1, 0), (14, 2, 2, 0)]
-    B = [(0, 7, 1, 0), (1, 6, .5, 0), (1.5, 5, .5, 0), (2, 4, 1, 0), (3, 5, 1, 0),
-         (4, 6, 1.5, 0), (5.5, 5, .5, 0), (6, 4, 1, 0), (7, 3, 1, 0),
-         (8, 2, 1, 0), (9, 1, .5, 0), (9.5, 2, .5, 0), (10, 3, 1, 0), (11, 2, 1, 0),
-         (12, 1, 1, 0), (13, 0, 1, 0), (14, 0, 2, 0)]
-    for bar in (2, 6, 10, 14, 18):
-        base = bar * 4
-        for at, st, dur, o in (A if bar in (2, 10, 18) else B): mel.append((base + at, st, dur, o))
-    # gentle arpeggio ostinato on the off bars
-    for bar in range(24):
-        if bar in (2, 3, 6, 7, 10, 11, 14, 15, 18, 19): continue
-        base = bar * 4
-        for k, st in enumerate((0, 2, 4, 2, 0, 2, 4, 5)): mel.append((base + k * .5, st, .5, 0)) if bar % 2 == 0 else None
-    bass = [[(0, 0, 1), (2, 0, 1), (3, 4, .5)], [(0, 4, 1), (2, 4, 1), (3, 3, .5)], [(0, 3, 1), (2, 3, 1), (3, 2, .5)], [(0, 0, 1), (2, 0, 1), (3, 1, .5)]]
-    maq = [(0, 'D', 1.0), (1, 'T', .6), (1.5, 'K', .3), (2, 'T', .5), (2.5, 'D', .8), (3, 'T', .6), (3.5, 'K', .3)]
-    groove = [maq, maq, maq, [(0, 'D', 1.0), (1, 'T', .6), (2, 'T', .5), (2.5, 'D', .8), (3, 'T', .6), (3.25, 'K', .3), (3.5, 'T', .5), (3.75, 'K', .3)]]
-    chords = [[73.42, 110.0], [98.0, 146.83], [77.78, 116.54], [73.42, 110.0]]
-    render_track(92, 24, mel, bass, groove, 0.7, chords, 'table_theme', chime_at=[(0, 1174.7), (48, 1568.0)])
+    for bar, ph in ((4, X), (6, Y), (8, X), (10, Z), (12, Y), (14, X), (16, Z), (18, Y)):
+        mel += [(bar * 4 + a, s, d, k) for a, s, d, k in ph]
+    bass = [[(0, 0, 1), (2.5, 0, .5), (3, 4, .5)], [(0, 4, 1), (2.5, 4, .5), (3, 3, .5)], [(0, 3, 1), (2.5, 3, .5), (3, 2, .5)], [(0, 0, 1), (2.5, 0, .5), (3, 1, .5)]]
+    maq = [(0, 'D', 1.0), (.5, 'R', .35), (1, 'T', .6), (1.5, 'R', .3), (1.75, 'K', .25), (2, 'R', .3), (2.5, 'D', .8), (3, 'T', .6), (3.5, 'R', .3)]
+    fill = [(0, 'D', 1.0), (.5, 'R', .35), (1, 'T', .6), (1.5, 'K', .3), (2, 'T', .5), (2.5, 'D', .8), (3, 'T', .6), (3.25, 'K', .3), (3.5, 'T', .5), (3.75, 'K', .3)]
+    groove = [maq, maq, maq, fill]
+    render_track(96, 24, mel, bass, groove, 0.75, 'table_theme')
 
 if __name__ == '__main__':
     what = sys.argv[1] if len(sys.argv) > 1 else 'all'
