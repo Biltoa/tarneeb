@@ -26,10 +26,10 @@ Do these once before handing the project to the agent.
 - [ ] Keep permission mode on `standard`. Switch to `full` only when the agent asks for `unity_script`.
 - [ ] In Claude Code, from the project folder, ask: "Run unity_projects." It should show the project as healthy with the Editor connected.
 
-## 4. Accounts for later days
-- [ ] itch.io account (Day 3 deploy).
-- [ ] Photon account and a PUN 2 App ID (Day 4).
+## 4. Accounts for later milestones
+- [ ] itch.io account (milestone 3: deploy).
+- [ ] Photon account and a PUN 2 App ID (milestone 4: online play).
 - [ ] New public GitHub repo for the project.
 
 ## 5. Kick off
-Tell the agent: "Read CLAUDE.md and the plan, then start Day 1."
+Tell the agent: "Read CLAUDE.md and the plan, then start milestone 1."

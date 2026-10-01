@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Build a small but polished Tarneeb (classic Levantine trick-taking card game) prototype in Unity, playable in the browser as a WebGL build, in 3 to 5 working days.
+Build a small but polished Tarneeb (classic Levantine trick-taking card game) prototype in Unity, playable in the browser as a WebGL build.
 
 The prototype is a portfolio piece for a job application to a mobile card game studio. It must show four things:
 
@@ -13,7 +13,7 @@ The prototype is a portfolio piece for a job application to a mobile card game s
 
 Priority order if time runs short: **single player vs bots (must) > WebGL hosting (must) > polish (should) > online multiplayer (should) > Arabic localization (could)**.
 
-The single-player version must be complete, deployed, and playable by the end of Day 3, before any multiplayer work starts. Multiplayer is added on top and must never break single player.
+The single-player version must be complete, deployed, and playable before any multiplayer work starts. Multiplayer is added on top and must never break single player.
 
 ## 2. Tech Stack
 
@@ -220,29 +220,29 @@ Only start after the single-player WebGL build is deployed and working.
 - Host on itch.io (HTML5 game, "mobile friendly" and "fullscreen button" enabled). GitHub Pages is an acceptable backup.
 - No threading, no `System.Threading.Tasks` background work, no synchronous file IO in WebGL.
 
-## 9. Schedule (3 to 5 days)
+## 9. Milestones (in order)
 
-**Day 1: Foundation and rules engine**
+**Milestone 1: Foundation and rules engine**
 - Confirm NAV MCP connection (`unity_projects`). Project setup, folder structure, assembly definitions, packages.
 - Start NAV_MCP_FIELD_NOTES.md and DEVLOG.md.
 - Complete `Core`: cards, deck, bidding, trump, trick resolution, scoring, game flow.
 - All rule tests passing. Basic `HeuristicBot`. Headless 10,000-game simulation passing.
 
-**Day 2: Playable single player**
+**Milestone 2: Playable single player**
 - Game scene built through NAV MCP batches: table layout, hand view, card interaction, bidding panel, trump picker, HUD.
 - Wire engine events to presentation with an animation queue.
 - Full game vs 3 bots playable from start to game over in the editor.
 
-**Day 3: Polish and deploy (single player is DONE after this day)**
+**Milestone 3: Polish and deploy (single player is DONE after this milestone)**
 - Animations, sound, round summary, game-over flow, menu.
 - NAV MCP WebGL validation, WebGL build, test on real phones, deploy to itch.io.
 - README first draft.
 
-**Day 4: Online multiplayer**
+**Milestone 4: Online multiplayer**
 - Photon integration, rooms, bot-fill, authoritative master flow, private hands.
 - Disconnect handling and turn timer.
 
-**Day 5: Buffer and presentation**
+**Milestone 5: Buffer and presentation**
 - Bug fixing from playtests, performance check, optional Arabic localization (see stretch goals).
 - Record a 60 to 90 second gameplay video. Finalize README.
 - Clean up NAV_MCP_FIELD_NOTES.md into a prioritized list of NAV MCP improvements.
@@ -277,11 +277,11 @@ Accounts, persistence beyond PlayerPrefs, monetization, chat, matchmaking by ski
 ## 13. Working Rules for the AI Agent
 
 - Work in the order of the schedule. Do not start multiplayer before single player is deployed.
-- Start every session with `unity_projects`. Do all Editor work through NAV MCP (section 3A) and log every issue in NAV_MCP_FIELD_NOTES.md as it happens, not at the end of the day.
+- Start every session with `unity_projects`. Do all Editor work through NAV MCP (section 3A) and log every issue in NAV_MCP_FIELD_NOTES.md as it happens, not at the end of a session.
 - Keep `Core` free of any `UnityEngine` reference. If a change needs one, it belongs in another layer.
 - Write or update tests with every rules change. Run the full test suite before marking any task done.
 - Never add a package, asset, or third-party code without stating why and confirming its license is free for commercial/portfolio use.
 - Prefer small, reviewable commits. One feature or fix per commit.
 - Maintain `DEVLOG.md`: after each work session, append what was built, decisions made and why, bugs found, and anything uncertain that the developer should review.
 - If a rule is ambiguous or a requirement conflicts with another, stop and ask instead of guessing.
-- Do not optimize prematurely, but profile once on Day 3 and fix anything that drops below 60 FPS in a mobile browser.
+- Do not optimize prematurely, but profile once at milestone 3 and fix anything that drops below 60 FPS in a mobile browser.
